@@ -1,0 +1,6 @@
+# Elm stuff
+elm-stuff/
+
+# Python stuff
+.env/
+__pycache__/
