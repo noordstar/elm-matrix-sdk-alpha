@@ -1,0 +1,152 @@
+version: v1.3
+name: Objects
+objects:
+  Sync:
+    description: The sync response the homeserver sends to the user.
+    fields:
+      account_data:
+        type: "[BlindEvent]"
+        required: true
+      next_batch:
+        type: string
+        required: true
+      presence:
+        type: "[BlindEvent]"
+        required: true
+      rooms:
+        type: Rooms
+  BlindEvent:
+    description: A blind event that does not give context about itself.
+    fields:
+      content:
+        type: value
+        required: true
+      type:
+        type: string
+        required: true
+  Rooms:
+    description: Updates to rooms.
+    fields:
+      invite:
+        type: "{[StrippedStateEvent]}"
+        required: false
+        default: Dict.empty
+      join:
+        type: "{JoinedRoom}"
+        required: false
+        default: Dict.empty
+      knock:
+        type: "{[StrippedStateEvent]}"
+        required: false
+        default: Dict.empty
+      leave:
+        type: "{LeftRoom}"
+        required: false
+        default: Dict.empty
+  StrippedStateEvent:
+    description: Stripped state events of a room that the user has limited access to.
+    fields:
+      content:
+        type: value
+        required: true
+      sender:
+        type: string
+        required: true
+      state_key:
+        type: string
+        required: true
+      type:
+        type: string
+        required: true
+  JoinedRoom:
+    description: Room that the user has joined.
+    fields:
+      account_data:
+        type: "[BlindEvent]"
+        required: true
+      ephemeral:
+        type: "[BlindEvent]"
+        required: true
+      state:
+        type: "[ClientEventWithoutRoomId]"
+        required: true
+      summary:
+        type: RoomSummary
+      timeline:
+        type: Timeline
+      unread_notifications:
+        type: UnreadNotificationCounts
+  ClientEventWithoutRoomId:
+    description: Client event that has all data except the room id.
+    fields:
+      content:
+        type: value
+        required: true
+      event_id:
+        type: string
+        required: true
+      origin_server_ts:
+        type: timestamp
+        required: true
+      sender:
+        type: string
+        required: true
+      state_key:
+        type: string
+      type:
+        type: string
+        required: true
+      unsigned:
+        type: UnsignedData
+  UnsignedData:
+    anti_recursion: true
+    description: Data that isn't getting signed for Canonical JSON.
+    fields:
+      age:
+        type: int
+      prev_content:
+        type: value
+      redacted_because:
+        type: ClientEventWithoutRoomId
+      transaction_id:
+        type: string
+  RoomSummary:
+    description: Information about a room which clients may need to correctly render it to users.
+    fields:
+      m.heroes:
+        type: "[string]"
+      m.invited_member_count:
+        type: int
+      m.joined_member_count:
+        type: int
+  Timeline:
+    description: The timeline of messages and state changes in a room.
+    fields:
+      events:
+        type: "[ClientEventWithoutRoomId]"
+        required: false
+        default: "[]"
+      limited:
+        type: bool
+        required: false
+        default: "False"
+      prev_batch:
+        type: string
+  UnreadNotificationCounts:
+    description: Counts of unread notifications for this room.
+    fields:
+      highlight_count:
+        type: int
+      notification_count:
+        type: int
+  LeftRoom:
+    description: Room that the user has left.
+    fields:
+      account_data:
+        type: "[BlindEvent]"
+        required: true
+      state:
+        type: "[ClientEventWithoutRoomId]"
+        required: true
+      timeline:
+        type: Timeline

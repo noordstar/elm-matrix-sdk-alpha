@@ -1,0 +1,197 @@
+version: v1.2
+name: SpecObjects
+objects:
+  Sync:
+    description: The sync response the homeserver sends to the user.
+    fields:
+      account_data:
+        type: AccountData
+      next_batch:
+        type: string
+        required: true
+      presence:
+        type: Presence
+      rooms:
+        type: Rooms
+  AccountData:
+    description: The private data created by this user in a given context.
+    fields:
+      events:
+        type: "[Event]"
+        required: false
+        default: "[]"
+  Event:
+    description: A blind event that does not give context about itself.
+    fields:
+      content:
+        type: value
+        required: true
+      type:
+        type: string
+        required: true
+  Presence:
+    description: The updates to the presence status of other users.
+    fields:
+      events:
+        type: "[Event]"
+        required: false
+        default: "[]"
+  Rooms:
+    description: Updates to rooms.
+    fields:
+      invite:
+        type: "{InvitedRoom}"
+        required: false
+        default: Dict.empty
+      join:
+        type: "{JoinedRoom}"
+        required: false
+        default: Dict.empty
+      knock:
+        type: "{KnockedRoom}"
+        required: false
+        default: Dict.empty
+      leave:
+        type: "{LeftRoom}"
+        required: false
+        default: Dict.empty
+  InvitedRoom:
+    description: Room that the user has been invited to.
+    fields:
+      invite_state:
+        type: InviteState
+  InviteState:
+    description: The state of a room that the user has been invited to.
+    fields:
+      events:
+        type: "[StrippedStateEvent]"
+        required: false
+        default: "[]"
+  StrippedStateEvent:
+    description: Stripped state events of a room that the user has limited access to.
+    fields:
+      content:
+        type: value
+        required: true
+      sender:
+        type: string
+        required: true
+      state_key:
+        type: string
+        required: true
+      type:
+        type: string
+        required: true
+  JoinedRoom:
+    description: Room that the user has joined.
+    fields:
+      account_data:
+        type: AccountData
+      ephemeral:
+        type: Ephemeral
+      state:
+        type: State
+      summary:
+        type: RoomSummary
+      timeline:
+        type: Timeline
+      unread_notifications:
+        type: UnreadNotificationCounts
+  Ephemeral:
+    description: Ephemeral events in a room that aren't recorded in the timeline or the room state.
+    fields:
+      events:
+        type: "[Event]"
+        required: false
+        default: "[]"
+  State:
+    description: Updates to the state of a room.
+    fields:
+      events:
+        type: "[ClientEventWithoutRoomId]"
+        required: false
+        default: "[]"
+  ClientEventWithoutRoomId:
+    description: Client event that has all data except the room id.
+    fields:
+      content:
+        type: value
+        required: true
+      event_id:
+        type: string
+        required: true
+      origin_server_ts:
+        type: timestamp
+        required: true
+      sender:
+        type: string
+        required: true
+      state_key:
+        type: string
+      type:
+        type: string
+        required: true
+      unsigned:
+        type: UnsignedData
+  UnsignedData:
+    anti_recursion: true
+    description: Data that isn't getting signed for Canonical JSON.
+    fields:
+      age:
+        type: int
+      prev_content:
+        type: value
+      redacted_because:
+        type: ClientEventWithoutRoomId
+      transaction_id:
+        type: string
+  RoomSummary:
+    description: Information about a room which clients may need to correctly render it to users.
+    fields:
+      m.heroes:
+        type: "[string]"
+      m.invited_member_count:
+        type: int
+      m.joined_member_count:
+        type: int
+  Timeline:
+    description: The timeline of messages and state changes in a room.
+    fields:
+      events:
+        type: "[ClientEventWithoutRoomId]"
+        required: false
+        default: "[]"
+      limited:
+        type: bool
+        required: false
+        default: "False"
+      prev_batch:
+        type: string
+  UnreadNotificationCounts:
+    description: Counts of unread notifications for this room.
+    fields:
+      highlight_count:
+        type: int
+      notification_count:
+        type: int
+  KnockedRoom:
+    description: Room that the user has knocked upon.
+    fields:
+      knock_state:
+        type: KnockState
+  KnockState:
+    description: The state of a room that the user has knocked upon.
+    fields:
+      events:
+        type: "[StrippedStateEvent]"
+        required: false
+        default: "[]"
+  LeftRoom:
+    description: Room that the user has left.
+    fields:
+      account_data:
+        type: AccountData
+      state:
+        type: State
+      timeline:
+        type: Timeline

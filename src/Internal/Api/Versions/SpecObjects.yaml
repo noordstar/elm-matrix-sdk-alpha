@@ -1,0 +1,11 @@
+version: V_all
+name: SpecObjects
+objects:
+  Versions:
+    description: Information on what the homeserver supports.
+    fields:
+      unstable_features:
+        type: "{bool}"
+      versions:
+        type: "[string]"
+        required: true

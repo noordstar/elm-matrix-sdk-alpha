@@ -1,6 +1,8 @@
 module Internal.Config.ErrorStrings exposing (..)
+
 {-| This module hosts all custom error messages that the SDK can deliver to the user.
 -}
+
 
 cannotSyncWithoutAccessToken : String
 cannotSyncWithoutAccessToken =

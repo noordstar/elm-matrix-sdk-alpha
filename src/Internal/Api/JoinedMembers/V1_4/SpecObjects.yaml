@@ -1,0 +1,17 @@
+version: v1.4
+name: SpecObjects
+objects:
+  RoomMemberList:
+    description: The dictionary containing all room member data.
+    fields:
+      joined:
+        type: "{RoomMember}"
+        required: false
+        default: Dict.empty
+  RoomMember:
+    description: User information of joined users.
+    fields:
+      avatar_url:
+        type: string
+      display_name:
+        type: string

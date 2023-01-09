@@ -1,12 +1,12 @@
-module Internal.Values.Exceptions exposing (Error(..), ClientError(..), ServerError(..), errorCatches, errorToString)
+module Internal.Tools.Exceptions exposing (ClientError(..), Error(..), ServerError(..), errorCatches, errorToString)
 
 {-| This module contains all potential errors that may be passed around in the SDK.
 -}
 
 import Dict
 import Http
-import Internal.Tools.DecodeExtra exposing (opField)
 import Internal.Config.ErrorStrings as ES
+import Internal.Tools.DecodeExtra exposing (opField)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -23,19 +23,14 @@ notices some internal inconsistencies or if it cannot interpret the server's
 input.
 
   - `ServerReturnsBadJSON` The homeserver sent JSON that does not parse.
-  - `ServerDoesntFollowJSONSpec` The homeserver sent data that lacks keys
-    required by spec.
-  - `ServerDoesntReturnBaseURL` The homeserver does not clarify its API
-    endpoints.
   - `CouldntGetTimestamp` The Elm core somehow failed to get the current
     Unix timestamp.
-  - `InvalidInputAccordingToSpec` The function contains invalid values.
+  - `NotSupportedYet` Some part of the SDK is intended to be implemented - but it isn't yet.
 
 -}
 type ClientError
     = ServerReturnsBadJSON String
     | CouldntGetTimestamp
-    | InsufficientCredentials String
     | NotSupportedYet String
 
 

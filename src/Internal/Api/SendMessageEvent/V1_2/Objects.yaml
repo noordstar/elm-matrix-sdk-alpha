@@ -1,0 +1,9 @@
+version: v1.2
+name: Objects
+objects:
+  EventResponse:
+    description: A response confirming that an event has been sent.
+    fields:
+      event_id:
+        type: string
+        required: true
