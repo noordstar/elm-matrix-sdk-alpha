@@ -31,6 +31,11 @@ originServerTs =
     Time.millisToPosix 0
 
 
+prevBatch : String
+prevBatch =
+    "this_previous_batch_does_not_exist"
+
+
 roomId : String
 roomId =
     "!unknown-room:example.org"
