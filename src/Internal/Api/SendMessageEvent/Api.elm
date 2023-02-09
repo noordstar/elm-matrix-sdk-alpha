@@ -1,4 +1,4 @@
-module Internal.Api.SendMessageEvent.V1.Api exposing (sendMessageEventV1, sendMessageEventV2, SendMessageEventOutputV1, SendMessageEventInputV1)
+module Internal.Api.SendMessageEvent.Api exposing (sendMessageEventV1, sendMessageEventV2, SendMessageEventOutputV1, SendMessageEventInputV1)
 
 import Internal.Api.Request as R
 import Internal.Api.SendMessageEvent.V1.SpecObjects as SO1

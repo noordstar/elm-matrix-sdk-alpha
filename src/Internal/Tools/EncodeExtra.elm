@@ -1,4 +1,13 @@
-module Internal.Tools.EncodeExtra exposing (..)
+module Internal.Tools.EncodeExtra exposing (maybeObject)
+
+{-| Module that helps with encoding objects into JSON.
+
+
+# Optional body object
+
+@docs maybeObject
+
+-}
 
 import Json.Encode as E
 

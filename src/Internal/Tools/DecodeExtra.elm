@@ -1,5 +1,14 @@
 module Internal.Tools.DecodeExtra exposing (opField, opFieldWithDefault)
 
+{-| Module that helps while decoding JSON.
+
+
+# Optional field decoders
+
+@docs opField, opFieldWithDefault
+
+-}
+
 import Json.Decode as D
 
 
