@@ -1,9 +1,0 @@
-version: v1.3
-name: SpecObjects
-objects:
-  EventResponse:
-    description: A response confirming that an event has been sent.
-    fields:
-      event_id:
-        type: string
-        required: true

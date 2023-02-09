@@ -13,6 +13,7 @@ sendMessageEvent versions =
     |> VC.sameForVersion "r0.1.0"
     |> VC.sameForVersion "r0.2.0"
     |> VC.sameForVersion "r0.3.0"
+    |> VC.sameForVersion "r0.4.0"
     |> VC.sameForVersion "r0.5.0"
     |> VC.sameForVersion "r0.6.0"
     |> VC.sameForVersion "r0.6.1"

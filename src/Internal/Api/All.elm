@@ -31,7 +31,7 @@ sendMessageEvent =
 
 {-| Send a state event into a Matrix room.
 -}
-sendStateEvent : List String -> SendStateKey.SendStateKeyInput -> SendStateKey.SendStateKeyOutput
+sendStateEvent : List String -> Maybe (SendStateKey.SendStateKeyInput -> SendStateKey.SendStateKeyOutput)
 sendStateEvent =
     SendStateKey.sendStateKey
 
