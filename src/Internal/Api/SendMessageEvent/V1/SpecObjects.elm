@@ -1,4 +1,4 @@
-module Internal.Api.SendMessageEvent.V1_5.SpecObjects exposing
+module Internal.Api.SendMessageEvent.V1.SpecObjects exposing
     ( EventResponse
     , encodeEventResponse
     , eventResponseDecoder
@@ -6,7 +6,7 @@ module Internal.Api.SendMessageEvent.V1_5.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1673279712
+Last generated at Unix time 1675952679
 
 -}
 

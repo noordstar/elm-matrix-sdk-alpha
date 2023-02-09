@@ -24,7 +24,7 @@ joinedMembers =
 
 {-| Send a message event into a Matrix room.
 -}
-sendMessageEvent : List String -> SendMessageEvent.SendMessageEventInput -> SendMessageEvent.SendMessageEventOutput
+sendMessageEvent : List String -> Maybe (SendMessageEvent.SendMessageEventInput -> SendMessageEvent.SendMessageEventOutput)
 sendMessageEvent =
     SendMessageEvent.sendMessageEvent
 

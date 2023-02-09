@@ -1,5 +1,5 @@
-version: v1.2
-name: Objects
+version: v1
+name: SpecObjects
 objects:
   EventResponse:
     description: A response confirming that an event has been sent.
