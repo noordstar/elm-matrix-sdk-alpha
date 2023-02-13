@@ -17,7 +17,7 @@ getEvent =
 
 {-| Get a list of members who are part of a Matrix room.
 -}
-joinedMembers : List String -> JoinedMembers.JoinedMembersInput -> JoinedMembers.JoinedMembersOutput
+joinedMembers : List String -> Maybe (JoinedMembers.JoinedMembersInput -> JoinedMembers.JoinedMembersOutput)
 joinedMembers =
     JoinedMembers.joinedMembers
 

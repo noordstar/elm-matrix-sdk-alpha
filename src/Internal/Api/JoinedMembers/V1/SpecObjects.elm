@@ -1,4 +1,4 @@
-module Internal.Api.JoinedMembers.V1_3.SpecObjects exposing
+module Internal.Api.JoinedMembers.V1.SpecObjects exposing
     ( RoomMember
     , RoomMemberList
     , encodeRoomMember
@@ -9,7 +9,7 @@ module Internal.Api.JoinedMembers.V1_3.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1673279712
+Last generated at Unix time 1676307378
 
 -}
 

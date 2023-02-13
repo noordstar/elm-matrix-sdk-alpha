@@ -1,8 +1,8 @@
 module Internal.Api.JoinedMembers.Api exposing (..)
 
+import Internal.Api.JoinedMembers.V1.SpecObjects as SO1
 import Internal.Api.Request as R
 import Internal.Tools.Exceptions as X
-import Json.Decode as D
 import Task exposing (Task)
 
 
@@ -13,8 +13,12 @@ type alias JoinedMembersInputV1 =
     }
 
 
-joinedMembersInputV1 : D.Decoder a -> (a -> b) -> JoinedMembersInputV1 -> Task X.Error b
-joinedMembersInputV1 decoder mapping data =
+type alias JoinedMembersOutputV1 =
+    Task X.Error SO1.RoomMemberList
+
+
+joinedMembersInputV1 : JoinedMembersInputV1 -> JoinedMembersOutputV1
+joinedMembersInputV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
         , method = "GET"
@@ -26,5 +30,5 @@ joinedMembersInputV1 decoder mapping data =
         , queryParams = []
         , bodyParams = []
         , timeout = Nothing
-        , decoder = \_ -> D.map mapping decoder
+        , decoder = \_ -> SO1.roomMemberListDecoder
         }
