@@ -1,4 +1,4 @@
-module Internal.Api.GetEvent.V1_3.SpecObjects exposing
+module Internal.Api.GetEvent.V1.SpecObjects exposing
     ( ClientEvent
     , UnsignedData(..)
     , clientEventDecoder
@@ -9,7 +9,7 @@ module Internal.Api.GetEvent.V1_3.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1673279712
+Last generated at Unix time 1676311233
 
 -}
 

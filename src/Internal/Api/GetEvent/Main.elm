@@ -1,27 +1,23 @@
 module Internal.Api.GetEvent.Main exposing (..)
 
 import Internal.Api.GetEvent.Api as Api
-import Internal.Api.GetEvent.V1_2.Api as V1_2
-import Internal.Api.GetEvent.V1_3.Api as V1_3
-import Internal.Api.GetEvent.V1_4.Api as V1_4
-import Internal.Api.GetEvent.V1_5.Api as V1_5
-import Internal.Api.GetEvent.V1_5.Objects as O
-import Internal.Api.VersionControl as V
-import Internal.Tools.Exceptions as X
-import Task exposing (Task)
+import Internal.Tools.VersionControl as VC
 
 
-getEvent : List String -> EventInput -> EventOutput
-getEvent =
-    V.firstVersion V1_2.packet
-        |> V.updateWith V1_3.packet
-        |> V.updateWith V1_4.packet
-        |> V.updateWith V1_5.packet
-        |> V.toFunction
+getEvent : List String -> Maybe (EventInput -> EventOutput)
+getEvent versions =
+    VC.withBottomLayer
+        { current = Api.getEventInputV1
+        , version = "v1.2"
+        }
+        |> VC.sameForVersion "v1.3"
+        |> VC.sameForVersion "v1.4"
+        |> VC.sameForVersion "v1.5"
+        |> VC.mostRecentFromVersionList versions
 
 
 type alias EventOutput =
-    Task X.Error O.ClientEvent
+    Api.GetEventOutputV1
 
 
 type alias EventInput =

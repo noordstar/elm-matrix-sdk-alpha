@@ -1,8 +1,8 @@
 module Internal.Api.GetEvent.Api exposing (..)
 
+import Internal.Api.GetEvent.V1.SpecObjects as SO1
 import Internal.Api.Request as R
 import Internal.Tools.Exceptions as X
-import Json.Decode as D
 import Task exposing (Task)
 
 
@@ -14,8 +14,12 @@ type alias GetEventInputV1 =
     }
 
 
-getEventInputV1 : D.Decoder a -> (a -> b) -> GetEventInputV1 -> Task X.Error b
-getEventInputV1 decoder mapping data =
+type alias GetEventOutputV1 =
+    Task X.Error SO1.ClientEvent
+
+
+getEventInputV1 : GetEventInputV1 -> GetEventOutputV1
+getEventInputV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
         , method = "GET"
@@ -28,5 +32,5 @@ getEventInputV1 decoder mapping data =
         , queryParams = []
         , bodyParams = []
         , timeout = Nothing
-        , decoder = \_ -> D.map mapping decoder
+        , decoder = \_ -> SO1.clientEventDecoder
         }

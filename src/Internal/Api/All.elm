@@ -10,7 +10,7 @@ import Internal.Api.Versions.Main as Versions
 
 {-| Get a specific event from the Matrix API.
 -}
-getEvent : List String -> GetEvent.EventInput -> GetEvent.EventOutput
+getEvent : List String -> Maybe (GetEvent.EventInput -> GetEvent.EventOutput)
 getEvent =
     GetEvent.getEvent
 
