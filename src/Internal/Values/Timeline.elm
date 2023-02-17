@@ -6,7 +6,6 @@ module Internal.Values.Timeline exposing (..)
 import Internal.Config.Leaking as Leaking
 import Internal.Tools.Fold as Fold
 import Internal.Values.Event as Event exposing (Event)
-import Internal.Values.Room exposing (stateAtEvent)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 
 

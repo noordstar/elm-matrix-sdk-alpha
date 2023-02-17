@@ -1,10 +1,9 @@
 module Internal.Values.Room exposing (..)
 
 import Dict exposing (Dict)
-import Internal.Tools.Fold as Fold
 import Internal.Tools.SpecEnums exposing (SessionDescriptionType(..))
 import Internal.Values.Event as Event exposing (BlindEvent, Event)
-import Internal.Values.StateManager as StateManager exposing (StateManager)
+import Internal.Values.StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Json.Encode as E
 
