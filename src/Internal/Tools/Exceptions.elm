@@ -10,12 +10,18 @@ import Internal.Tools.DecodeExtra exposing (opField)
 import Json.Decode as D
 import Json.Encode as E
 
+{-| Errors that may return in any circumstance:
 
+- `InternetException` Errors that the `elm/http` library might raise.
+- `SDKException` Errors that this SDK might raise if it doesn't like its own input
+- `ServerException` Errors that the homeserver might bring
+- `UnsupportedSpecVersion` This SDK does not support the needed spec versions for certain operations - usually because a homeserver is extremely old.
+-}
 type Error
     = InternetException Http.Error
     | SDKException ClientError
     | ServerException ServerError
-    | UnsupportedVersion
+    | UnsupportedSpecVersion
 
 
 {-| Errors that this SDK might return if it doesn't like its own input, if it

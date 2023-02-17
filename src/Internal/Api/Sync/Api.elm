@@ -20,14 +20,14 @@ type alias SyncInputV1 =
 
 
 type alias SyncOutputV1 =
-    Task X.Error SO1.Sync
+    SO1.Sync
 
 
 type alias SyncOutputV2 =
-    Task X.Error SO2.Sync
+    SO2.Sync
 
 
-syncV1 : SyncInputV1 -> SyncOutputV1
+syncV1 : SyncInputV1 -> Task X.Error SyncOutputV1
 syncV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
@@ -51,7 +51,7 @@ syncV1 data =
         }
 
 
-syncV2 : SyncInputV1 -> SyncOutputV2
+syncV2 : SyncInputV1 -> Task X.Error SyncOutputV2
 syncV2 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken

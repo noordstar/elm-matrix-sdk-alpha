@@ -1,10 +1,11 @@
 module Internal.Api.SendStateKey.Main exposing (..)
 
 import Internal.Api.SendStateKey.Api as Api
+import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
+import Task exposing (Task)
 
-
-sendStateKey : List String -> Maybe (SendStateKeyInput -> SendStateKeyOutput)
+sendStateKey : List String -> Maybe (SendStateKeyInput -> Task X.Error SendStateKeyOutput)
 sendStateKey versions =
     VC.withBottomLayer
         { current = Api.sendStateKeyV1

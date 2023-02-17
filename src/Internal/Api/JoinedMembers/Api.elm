@@ -14,10 +14,10 @@ type alias JoinedMembersInputV1 =
 
 
 type alias JoinedMembersOutputV1 =
-    Task X.Error SO1.RoomMemberList
+    SO1.RoomMemberList
 
 
-joinedMembersV1 : JoinedMembersInputV1 -> JoinedMembersOutputV1
+joinedMembersV1 : JoinedMembersInputV1 -> Task X.Error JoinedMembersOutputV1
 joinedMembersV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
@@ -34,7 +34,7 @@ joinedMembersV1 data =
         }
 
 
-joinedMembersV2 : JoinedMembersInputV1 -> JoinedMembersOutputV1
+joinedMembersV2 : JoinedMembersInputV1 -> Task X.Error JoinedMembersOutputV1
 joinedMembersV2 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken

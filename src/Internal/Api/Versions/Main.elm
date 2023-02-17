@@ -11,9 +11,9 @@ type alias VersionsInput =
 
 
 type alias VersionsOutput =
-    Task X.Error O.Versions
+    O.Versions
 
 
-getVersions : VersionsInput -> VersionsOutput
+getVersions : VersionsInput -> Task X.Error VersionsOutput
 getVersions baseUrl =
     Api.versionsV1 { baseUrl = baseUrl }

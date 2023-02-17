@@ -18,10 +18,10 @@ type alias SendMessageEventInputV1 =
 
 
 type alias SendMessageEventOutputV1 =
-    Task X.Error SO1.EventResponse
+    SO1.EventResponse
 
 
-sendMessageEventV1 : SendMessageEventInputV1 -> SendMessageEventOutputV1
+sendMessageEventV1 : SendMessageEventInputV1 -> Task X.Error SendMessageEventOutputV1
 sendMessageEventV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
@@ -40,7 +40,7 @@ sendMessageEventV1 data =
         }
 
 
-sendMessageEventV2 : SendMessageEventInputV1 -> SendMessageEventOutputV1
+sendMessageEventV2 : SendMessageEventInputV1 -> Task X.Error SendMessageEventOutputV1
 sendMessageEventV2 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken

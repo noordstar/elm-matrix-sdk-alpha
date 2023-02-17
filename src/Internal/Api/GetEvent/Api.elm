@@ -15,10 +15,10 @@ type alias GetEventInputV1 =
 
 
 type alias GetEventOutputV1 =
-    Task X.Error SO1.ClientEvent
+    SO1.ClientEvent
 
 
-getEventInputV1 : GetEventInputV1 -> GetEventOutputV1
+getEventInputV1 : GetEventInputV1 -> Task X.Error GetEventOutputV1
 getEventInputV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken

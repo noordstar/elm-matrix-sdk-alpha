@@ -2,11 +2,12 @@ module Internal.Api.Sync.Main exposing (..)
 
 import Internal.Api.Sync.Api as Api
 import Internal.Api.Sync.V2.Upcast as U2
+import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
-import Task
+import Task exposing (Task)
 
 
-sync : List String -> Maybe (SyncInput -> SyncOutput)
+sync : List String -> Maybe (SyncInput -> Task X.Error SyncOutput)
 sync versions =
     VC.withBottomLayer
         { current = Api.syncV1

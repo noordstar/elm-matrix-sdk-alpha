@@ -1,10 +1,12 @@
 module Internal.Api.GetEvent.Main exposing (..)
 
 import Internal.Api.GetEvent.Api as Api
+import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
+import Task exposing (Task)
 
 
-getEvent : List String -> Maybe (EventInput -> EventOutput)
+getEvent : List String -> Maybe (EventInput -> Task X.Error EventOutput)
 getEvent versions =
     VC.withBottomLayer
         { current = Api.getEventInputV1

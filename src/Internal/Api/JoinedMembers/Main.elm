@@ -1,10 +1,12 @@
 module Internal.Api.JoinedMembers.Main exposing (..)
 
 import Internal.Api.JoinedMembers.Api as Api
+import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
+import Task exposing (Task)
 
 
-joinedMembers : List String -> Maybe (JoinedMembersInput -> JoinedMembersOutput)
+joinedMembers : List String -> Maybe (JoinedMembersInput -> Task X.Error JoinedMembersOutput)
 joinedMembers versions =
     VC.withBottomLayer
         { current = Api.joinedMembersV1

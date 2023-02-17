@@ -18,10 +18,10 @@ type alias SendStateKeyInputV1 =
 
 
 type alias SendStateKeyOutputV1 =
-    Task X.Error SO1.EventResponse
+    SO1.EventResponse
 
 
-sendStateKeyV1 : SendStateKeyInputV1 -> SendStateKeyOutputV1
+sendStateKeyV1 : SendStateKeyInputV1 -> Task X.Error SendStateKeyOutputV1
 sendStateKeyV1 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
@@ -40,7 +40,7 @@ sendStateKeyV1 data =
         }
 
 
-sendStateKeyV2 : SendStateKeyInputV1 -> SendStateKeyOutputV1
+sendStateKeyV2 : SendStateKeyInputV1 -> Task X.Error SendStateKeyOutputV1
 sendStateKeyV2 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
