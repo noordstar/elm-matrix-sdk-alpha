@@ -1,32 +1,56 @@
-module Internal.Api.Sync.V1_5.Objects exposing
-    ( BlindEvent
+module Internal.Api.Sync.V1.SpecObjects exposing
+    ( AccountData
     , ClientEventWithoutRoomId
+    , Ephemeral
+    , Event
+    , InviteState
+    , InvitedRoom
     , JoinedRoom
+    , KnockState
+    , KnockedRoom
     , LeftRoom
+    , Presence
     , RoomSummary
     , Rooms
+    , State
     , StrippedStateEvent
     , Sync
     , Timeline
     , UnreadNotificationCounts
     , UnsignedData(..)
-    , blindEventDecoder
+    , accountDataDecoder
     , clientEventWithoutRoomIdDecoder
-    , encodeBlindEvent
+    , encodeAccountData
     , encodeClientEventWithoutRoomId
+    , encodeEphemeral
+    , encodeEvent
+    , encodeInviteState
+    , encodeInvitedRoom
     , encodeJoinedRoom
+    , encodeKnockState
+    , encodeKnockedRoom
     , encodeLeftRoom
+    , encodePresence
     , encodeRoomSummary
     , encodeRooms
+    , encodeState
     , encodeStrippedStateEvent
     , encodeSync
     , encodeTimeline
     , encodeUnreadNotificationCounts
     , encodeUnsignedData
+    , ephemeralDecoder
+    , eventDecoder
+    , inviteStateDecoder
+    , invitedRoomDecoder
     , joinedRoomDecoder
+    , knockStateDecoder
+    , knockedRoomDecoder
     , leftRoomDecoder
+    , presenceDecoder
     , roomSummaryDecoder
     , roomsDecoder
+    , stateDecoder
     , strippedStateEventDecoder
     , syncDecoder
     , timelineDecoder
@@ -34,9 +58,9 @@ module Internal.Api.Sync.V1_5.Objects exposing
     , unsignedDataDecoder
     )
 
-{-| Automatically generated 'Objects'
+{-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1673279712
+Last generated at Unix time 1676625734
 
 -}
 
@@ -48,30 +72,27 @@ import Json.Decode as D
 import Json.Encode as E
 
 
-{-| A blind event that does not give context about itself.
+{-| The private data created by this user in a given context.
 -}
-type alias BlindEvent =
-    { content : E.Value
-    , contentType : String
+type alias AccountData =
+    { events : List Event
     }
 
 
-encodeBlindEvent : BlindEvent -> E.Value
-encodeBlindEvent data =
+encodeAccountData : AccountData -> E.Value
+encodeAccountData data =
     maybeObject
-        [ ( "content", Just <| data.content )
-        , ( "type", Just <| E.string data.contentType )
+        [ ( "events", Just <| E.list encodeEvent data.events )
         ]
 
 
-blindEventDecoder : D.Decoder BlindEvent
-blindEventDecoder =
-    D.map2
-        (\a b ->
-            { content = a, contentType = b }
+accountDataDecoder : D.Decoder AccountData
+accountDataDecoder =
+    D.map
+        (\a ->
+            { events = a }
         )
-        (D.field "content" D.value)
-        (D.field "type" D.string)
+        (opFieldWithDefault "events" [] (D.list eventDecoder))
 
 
 {-| Client event that has all data except the room id.
@@ -115,52 +136,190 @@ clientEventWithoutRoomIdDecoder =
         (opField "unsigned" (D.lazy (\_ -> unsignedDataDecoder)))
 
 
+{-| Ephemeral events in a room that aren't recorded in the timeline or the room state.
+-}
+type alias Ephemeral =
+    { events : List Event
+    }
+
+
+encodeEphemeral : Ephemeral -> E.Value
+encodeEphemeral data =
+    maybeObject
+        [ ( "events", Just <| E.list encodeEvent data.events )
+        ]
+
+
+ephemeralDecoder : D.Decoder Ephemeral
+ephemeralDecoder =
+    D.map
+        (\a ->
+            { events = a }
+        )
+        (opFieldWithDefault "events" [] (D.list eventDecoder))
+
+
+{-| A blind event that does not give context about itself.
+-}
+type alias Event =
+    { content : E.Value
+    , contentType : String
+    }
+
+
+encodeEvent : Event -> E.Value
+encodeEvent data =
+    maybeObject
+        [ ( "content", Just <| data.content )
+        , ( "type", Just <| E.string data.contentType )
+        ]
+
+
+eventDecoder : D.Decoder Event
+eventDecoder =
+    D.map2
+        (\a b ->
+            { content = a, contentType = b }
+        )
+        (D.field "content" D.value)
+        (D.field "type" D.string)
+
+
+{-| Room that the user has been invited to.
+-}
+type alias InvitedRoom =
+    { inviteState : Maybe InviteState
+    }
+
+
+encodeInvitedRoom : InvitedRoom -> E.Value
+encodeInvitedRoom data =
+    maybeObject
+        [ ( "invite_state", Maybe.map encodeInviteState data.inviteState )
+        ]
+
+
+invitedRoomDecoder : D.Decoder InvitedRoom
+invitedRoomDecoder =
+    D.map
+        (\a ->
+            { inviteState = a }
+        )
+        (opField "invite_state" inviteStateDecoder)
+
+
+{-| The state of a room that the user has been invited to.
+-}
+type alias InviteState =
+    { events : List StrippedStateEvent
+    }
+
+
+encodeInviteState : InviteState -> E.Value
+encodeInviteState data =
+    maybeObject
+        [ ( "events", Just <| E.list encodeStrippedStateEvent data.events )
+        ]
+
+
+inviteStateDecoder : D.Decoder InviteState
+inviteStateDecoder =
+    D.map
+        (\a ->
+            { events = a }
+        )
+        (opFieldWithDefault "events" [] (D.list strippedStateEventDecoder))
+
+
 {-| Room that the user has joined.
 -}
 type alias JoinedRoom =
-    { accountData : List BlindEvent
-    , ephemeral : List BlindEvent
-    , state : List ClientEventWithoutRoomId
+    { accountData : Maybe AccountData
+    , ephemeral : Maybe Ephemeral
+    , state : Maybe State
     , summary : Maybe RoomSummary
     , timeline : Maybe Timeline
     , unreadNotifications : Maybe UnreadNotificationCounts
-    , unreadThreadNotifications : Dict String UnreadNotificationCounts
     }
 
 
 encodeJoinedRoom : JoinedRoom -> E.Value
 encodeJoinedRoom data =
     maybeObject
-        [ ( "account_data", Just <| E.list encodeBlindEvent data.accountData )
-        , ( "ephemeral", Just <| E.list encodeBlindEvent data.ephemeral )
-        , ( "state", Just <| E.list encodeClientEventWithoutRoomId data.state )
+        [ ( "account_data", Maybe.map encodeAccountData data.accountData )
+        , ( "ephemeral", Maybe.map encodeEphemeral data.ephemeral )
+        , ( "state", Maybe.map encodeState data.state )
         , ( "summary", Maybe.map encodeRoomSummary data.summary )
         , ( "timeline", Maybe.map encodeTimeline data.timeline )
         , ( "unread_notifications", Maybe.map encodeUnreadNotificationCounts data.unreadNotifications )
-        , ( "unread_thread_notifications", Just <| E.dict identity encodeUnreadNotificationCounts data.unreadThreadNotifications )
         ]
 
 
 joinedRoomDecoder : D.Decoder JoinedRoom
 joinedRoomDecoder =
-    D.map7
-        (\a b c d e f g ->
-            { accountData = a, ephemeral = b, state = c, summary = d, timeline = e, unreadNotifications = f, unreadThreadNotifications = g }
+    D.map6
+        (\a b c d e f ->
+            { accountData = a, ephemeral = b, state = c, summary = d, timeline = e, unreadNotifications = f }
         )
-        (D.field "account_data" (D.list blindEventDecoder))
-        (D.field "ephemeral" (D.list blindEventDecoder))
-        (D.field "state" (D.list clientEventWithoutRoomIdDecoder))
+        (opField "account_data" accountDataDecoder)
+        (opField "ephemeral" ephemeralDecoder)
+        (opField "state" stateDecoder)
         (opField "summary" roomSummaryDecoder)
         (opField "timeline" timelineDecoder)
         (opField "unread_notifications" unreadNotificationCountsDecoder)
-        (D.field "unread_thread_notifications" (D.dict unreadNotificationCountsDecoder))
+
+
+{-| Room that the user has knocked upon.
+-}
+type alias KnockedRoom =
+    { knockState : Maybe KnockState
+    }
+
+
+encodeKnockedRoom : KnockedRoom -> E.Value
+encodeKnockedRoom data =
+    maybeObject
+        [ ( "knock_state", Maybe.map encodeKnockState data.knockState )
+        ]
+
+
+knockedRoomDecoder : D.Decoder KnockedRoom
+knockedRoomDecoder =
+    D.map
+        (\a ->
+            { knockState = a }
+        )
+        (opField "knock_state" knockStateDecoder)
+
+
+{-| The state of a room that the user has knocked upon.
+-}
+type alias KnockState =
+    { events : List StrippedStateEvent
+    }
+
+
+encodeKnockState : KnockState -> E.Value
+encodeKnockState data =
+    maybeObject
+        [ ( "events", Just <| E.list encodeStrippedStateEvent data.events )
+        ]
+
+
+knockStateDecoder : D.Decoder KnockState
+knockStateDecoder =
+    D.map
+        (\a ->
+            { events = a }
+        )
+        (opFieldWithDefault "events" [] (D.list strippedStateEventDecoder))
 
 
 {-| Room that the user has left.
 -}
 type alias LeftRoom =
-    { accountData : List BlindEvent
-    , state : List ClientEventWithoutRoomId
+    { accountData : Maybe AccountData
+    , state : Maybe State
     , timeline : Maybe Timeline
     }
 
@@ -168,8 +327,8 @@ type alias LeftRoom =
 encodeLeftRoom : LeftRoom -> E.Value
 encodeLeftRoom data =
     maybeObject
-        [ ( "account_data", Just <| E.list encodeBlindEvent data.accountData )
-        , ( "state", Just <| E.list encodeClientEventWithoutRoomId data.state )
+        [ ( "account_data", Maybe.map encodeAccountData data.accountData )
+        , ( "state", Maybe.map encodeState data.state )
         , ( "timeline", Maybe.map encodeTimeline data.timeline )
         ]
 
@@ -180,17 +339,40 @@ leftRoomDecoder =
         (\a b c ->
             { accountData = a, state = b, timeline = c }
         )
-        (D.field "account_data" (D.list blindEventDecoder))
-        (D.field "state" (D.list clientEventWithoutRoomIdDecoder))
+        (opField "account_data" accountDataDecoder)
+        (opField "state" stateDecoder)
         (opField "timeline" timelineDecoder)
+
+
+{-| The updates to the presence status of other users.
+-}
+type alias Presence =
+    { events : List Event
+    }
+
+
+encodePresence : Presence -> E.Value
+encodePresence data =
+    maybeObject
+        [ ( "events", Just <| E.list encodeEvent data.events )
+        ]
+
+
+presenceDecoder : D.Decoder Presence
+presenceDecoder =
+    D.map
+        (\a ->
+            { events = a }
+        )
+        (opFieldWithDefault "events" [] (D.list eventDecoder))
 
 
 {-| Updates to rooms.
 -}
 type alias Rooms =
-    { invite : Dict String (List StrippedStateEvent)
+    { invite : Dict String InvitedRoom
     , join : Dict String JoinedRoom
-    , knock : Dict String (List StrippedStateEvent)
+    , knock : Dict String KnockedRoom
     , leave : Dict String LeftRoom
     }
 
@@ -198,9 +380,9 @@ type alias Rooms =
 encodeRooms : Rooms -> E.Value
 encodeRooms data =
     maybeObject
-        [ ( "invite", Just <| E.dict identity (E.list encodeStrippedStateEvent) data.invite )
+        [ ( "invite", Just <| E.dict identity encodeInvitedRoom data.invite )
         , ( "join", Just <| E.dict identity encodeJoinedRoom data.join )
-        , ( "knock", Just <| E.dict identity (E.list encodeStrippedStateEvent) data.knock )
+        , ( "knock", Just <| E.dict identity encodeKnockedRoom data.knock )
         , ( "leave", Just <| E.dict identity encodeLeftRoom data.leave )
         ]
 
@@ -211,9 +393,9 @@ roomsDecoder =
         (\a b c d ->
             { invite = a, join = b, knock = c, leave = d }
         )
-        (opFieldWithDefault "invite" Dict.empty (D.dict (D.list strippedStateEventDecoder)))
+        (opFieldWithDefault "invite" Dict.empty (D.dict invitedRoomDecoder))
         (opFieldWithDefault "join" Dict.empty (D.dict joinedRoomDecoder))
-        (opFieldWithDefault "knock" Dict.empty (D.dict (D.list strippedStateEventDecoder)))
+        (opFieldWithDefault "knock" Dict.empty (D.dict knockedRoomDecoder))
         (opFieldWithDefault "leave" Dict.empty (D.dict leftRoomDecoder))
 
 
@@ -244,6 +426,29 @@ roomSummaryDecoder =
         (opField "m.heroes" (D.list D.string))
         (opField "m.invited_member_count" D.int)
         (opField "m.joined_member_count" D.int)
+
+
+{-| Updates to the state of a room.
+-}
+type alias State =
+    { events : List ClientEventWithoutRoomId
+    }
+
+
+encodeState : State -> E.Value
+encodeState data =
+    maybeObject
+        [ ( "events", Just <| E.list encodeClientEventWithoutRoomId data.events )
+        ]
+
+
+stateDecoder : D.Decoder State
+stateDecoder =
+    D.map
+        (\a ->
+            { events = a }
+        )
+        (opFieldWithDefault "events" [] (D.list clientEventWithoutRoomIdDecoder))
 
 
 {-| Stripped state events of a room that the user has limited access to.
@@ -281,9 +486,9 @@ strippedStateEventDecoder =
 {-| The sync response the homeserver sends to the user.
 -}
 type alias Sync =
-    { accountData : List BlindEvent
+    { accountData : Maybe AccountData
     , nextBatch : String
-    , presence : List BlindEvent
+    , presence : Maybe Presence
     , rooms : Maybe Rooms
     }
 
@@ -291,9 +496,9 @@ type alias Sync =
 encodeSync : Sync -> E.Value
 encodeSync data =
     maybeObject
-        [ ( "account_data", Just <| E.list encodeBlindEvent data.accountData )
+        [ ( "account_data", Maybe.map encodeAccountData data.accountData )
         , ( "next_batch", Just <| E.string data.nextBatch )
-        , ( "presence", Just <| E.list encodeBlindEvent data.presence )
+        , ( "presence", Maybe.map encodePresence data.presence )
         , ( "rooms", Maybe.map encodeRooms data.rooms )
         ]
 
@@ -304,9 +509,9 @@ syncDecoder =
         (\a b c d ->
             { accountData = a, nextBatch = b, presence = c, rooms = d }
         )
-        (D.field "account_data" (D.list blindEventDecoder))
+        (opField "account_data" accountDataDecoder)
         (D.field "next_batch" D.string)
-        (D.field "presence" (D.list blindEventDecoder))
+        (opField "presence" presenceDecoder)
         (opField "rooms" roomsDecoder)
 
 

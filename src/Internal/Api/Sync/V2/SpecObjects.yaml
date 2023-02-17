@@ -1,21 +1,26 @@
-version: v1.5
-name: Objects
+version: v2
+name: SpecObjects
 objects:
   Sync:
     description: The sync response the homeserver sends to the user.
     fields:
       account_data:
-        type: "[BlindEvent]"
-        required: true
+        type: AccountData
       next_batch:
         type: string
         required: true
       presence:
-        type: "[BlindEvent]"
-        required: true
+        type: Presence
       rooms:
         type: Rooms
-  BlindEvent:
+  AccountData:
+    description: The private data created by this user in a given context.
+    fields:
+      events:
+        type: "[Event]"
+        required: false
+        default: "[]"
+  Event:
     description: A blind event that does not give context about itself.
     fields:
       content:
@@ -24,11 +29,18 @@ objects:
       type:
         type: string
         required: true
+  Presence:
+    description: The updates to the presence status of other users.
+    fields:
+      events:
+        type: "[Event]"
+        required: false
+        default: "[]"
   Rooms:
     description: Updates to rooms.
     fields:
       invite:
-        type: "{[StrippedStateEvent]}"
+        type: "{InvitedRoom}"
         required: false
         default: Dict.empty
       join:
@@ -36,13 +48,25 @@ objects:
         required: false
         default: Dict.empty
       knock:
-        type: "{[StrippedStateEvent]}"
+        type: "{KnockedRoom}"
         required: false
         default: Dict.empty
       leave:
         type: "{LeftRoom}"
         required: false
         default: Dict.empty
+  InvitedRoom:
+    description: Room that the user has been invited to.
+    fields:
+      invite_state:
+        type: InviteState
+  InviteState:
+    description: The state of a room that the user has been invited to.
+    fields:
+      events:
+        type: "[StrippedStateEvent]"
+        required: false
+        default: "[]"
   StrippedStateEvent:
     description: Stripped state events of a room that the user has limited access to.
     fields:
@@ -62,14 +86,11 @@ objects:
     description: Room that the user has joined.
     fields:
       account_data:
-        type: "[BlindEvent]"
-        required: true
+        type: AccountData
       ephemeral:
-        type: "[BlindEvent]"
-        required: true
+        type: Ephemeral
       state:
-        type: "[ClientEventWithoutRoomId]"
-        required: true
+        type: State
       summary:
         type: RoomSummary
       timeline:
@@ -77,8 +98,23 @@ objects:
       unread_notifications:
         type: UnreadNotificationCounts
       unread_thread_notifications:
-        type: "{UnreadNotificationCounts}"
-        required: true
+        type: "{ThreadNotificationCounts}"
+        required: false
+        default: Dict.empty
+  Ephemeral:
+    description: Ephemeral events in a room that aren't recorded in the timeline or the room state.
+    fields:
+      events:
+        type: "[Event]"
+        required: false
+        default: "[]"
+  State:
+    description: Updates to the state of a room.
+    fields:
+      events:
+        type: "[ClientEventWithoutRoomId]"
+        required: false
+        default: "[]"
   ClientEventWithoutRoomId:
     description: Client event that has all data except the room id.
     fields:
@@ -142,14 +178,31 @@ objects:
         type: int
       notification_count:
         type: int
+  ThreadNotificationCounts:
+    description: Counts of unread notifications for a given thread.
+    fields:
+      highlight_count:
+        type: int
+      notification_count:
+        type: int
+  KnockedRoom:
+    description: Room that the user has knocked upon.
+    fields:
+      knock_state:
+        type: KnockState
+  KnockState:
+    description: The state of a room that the user has knocked upon.
+    fields:
+      events:
+        type: "[StrippedStateEvent]"
+        required: false
+        default: "[]"
   LeftRoom:
     description: Room that the user has left.
     fields:
       account_data:
-        type: "[BlindEvent]"
-        required: true
+        type: AccountData
       state:
-        type: "[ClientEventWithoutRoomId]"
-        required: true
+        type: State
       timeline:
         type: Timeline

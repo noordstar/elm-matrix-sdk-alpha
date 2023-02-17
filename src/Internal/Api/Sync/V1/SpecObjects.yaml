@@ -1,4 +1,4 @@
-version: v1.5
+version: v1
 name: SpecObjects
 objects:
   Sync:
@@ -97,10 +97,6 @@ objects:
         type: Timeline
       unread_notifications:
         type: UnreadNotificationCounts
-      unread_thread_notifications:
-        type: "{ThreadNotificationCounts}"
-        required: false
-        default: Dict.empty
   Ephemeral:
     description: Ephemeral events in a room that aren't recorded in the timeline or the room state.
     fields:
@@ -173,13 +169,6 @@ objects:
         type: string
   UnreadNotificationCounts:
     description: Counts of unread notifications for this room.
-    fields:
-      highlight_count:
-        type: int
-      notification_count:
-        type: int
-  ThreadNotificationCounts:
-    description: Counts of unread notifications for a given thread.
     fields:
       highlight_count:
         type: int
