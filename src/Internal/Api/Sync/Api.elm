@@ -22,6 +22,7 @@ type alias SyncInputV1 =
 type alias SyncOutputV1 =
     Task X.Error SO1.Sync
 
+
 type alias SyncOutputV2 =
     Task X.Error SO2.Sync
 

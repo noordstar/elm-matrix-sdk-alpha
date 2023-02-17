@@ -4,6 +4,7 @@ import Dict
 import Internal.Api.Sync.V1.SpecObjects as PO
 import Internal.Api.Sync.V2.SpecObjects as SO
 
+
 upcastSync : PO.Sync -> SO.Sync
 upcastSync old =
     { accountData = old.accountData
@@ -12,6 +13,7 @@ upcastSync old =
     , rooms = Maybe.map upcastRooms old.rooms
     }
 
+
 upcastRooms : PO.Rooms -> SO.Rooms
 upcastRooms old =
     { invite = old.invite
@@ -19,6 +21,7 @@ upcastRooms old =
     , knock = old.knock
     , leave = Dict.map (\_ -> upcastLeftRoom) old.leave
     }
+
 
 upcastJoinedRoom : PO.JoinedRoom -> SO.JoinedRoom
 upcastJoinedRoom old =
@@ -31,9 +34,11 @@ upcastJoinedRoom old =
     , unreadThreadNotifications = Dict.empty
     }
 
+
 upcastState : PO.State -> SO.State
 upcastState old =
     { events = List.map upcastClientEventWithoutRoomId old.events }
+
 
 upcastClientEventWithoutRoomId : PO.ClientEventWithoutRoomId -> SO.ClientEventWithoutRoomId
 upcastClientEventWithoutRoomId old =
@@ -46,6 +51,7 @@ upcastClientEventWithoutRoomId old =
     , unsigned = Maybe.map upcastUnsigned old.unsigned
     }
 
+
 upcastUnsigned : PO.UnsignedData -> SO.UnsignedData
 upcastUnsigned (PO.UnsignedData old) =
     SO.UnsignedData
@@ -55,12 +61,14 @@ upcastUnsigned (PO.UnsignedData old) =
         , transactionId = old.transactionId
         }
 
+
 upcastTimeline : PO.Timeline -> SO.Timeline
 upcastTimeline old =
     { events = List.map upcastClientEventWithoutRoomId old.events
     , limited = old.limited
     , prevBatch = old.prevBatch
     }
+
 
 upcastLeftRoom : PO.LeftRoom -> SO.LeftRoom
 upcastLeftRoom old =
