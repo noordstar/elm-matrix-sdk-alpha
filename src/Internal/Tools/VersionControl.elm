@@ -92,10 +92,10 @@ type alias MiddleLayer cin cout din dout =
 {-| The VersionControl layer is the layer that keeps track of all potential versions.
 -}
 type VersionControl cin cout
-    = VersionControl 
+    = VersionControl
         { latestVersion : cin -> cout
         , order : List String
-        , versions : Dict String (cin -> cout) 
+        , versions : Dict String (cin -> cout)
         }
 
 
@@ -154,6 +154,7 @@ mostRecentFromVersionList versionList ((VersionControl { order }) as vc) =
         |> List.filterMap (\v -> fromVersion v vc)
         |> List.head
 
+
 {-| Sometimes, no changes are needed and a function works just the same as the one in the previous version.
 In that case, you can amend with a `sameForVersion` function to indicate that the spec is
 identical for this version.
@@ -161,9 +162,9 @@ identical for this version.
 sameForVersion : String -> VersionControl a b -> VersionControl a b
 sameForVersion version (VersionControl data) =
     VersionControl
-        { data 
-        | order = version :: data.order
-        , versions = Dict.insert version data.latestVersion data.versions 
+        { data
+            | order = version :: data.order
+            , versions = Dict.insert version data.latestVersion data.versions
         }
 
 

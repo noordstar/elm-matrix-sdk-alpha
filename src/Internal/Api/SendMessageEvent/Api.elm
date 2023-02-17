@@ -1,4 +1,4 @@
-module Internal.Api.SendMessageEvent.Api exposing (sendMessageEventV1, sendMessageEventV2, SendMessageEventOutputV1, SendMessageEventInputV1)
+module Internal.Api.SendMessageEvent.Api exposing (SendMessageEventInputV1, SendMessageEventOutputV1, sendMessageEventV1, sendMessageEventV2)
 
 import Internal.Api.Request as R
 import Internal.Api.SendMessageEvent.V1.SpecObjects as SO1
@@ -16,7 +16,9 @@ type alias SendMessageEventInputV1 =
     , transactionId : String
     }
 
-type alias SendMessageEventOutputV1 = Task X.Error SO1.EventResponse
+
+type alias SendMessageEventOutputV1 =
+    Task X.Error SO1.EventResponse
 
 
 sendMessageEventV1 : SendMessageEventInputV1 -> SendMessageEventOutputV1
