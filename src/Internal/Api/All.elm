@@ -38,7 +38,7 @@ sendStateEvent =
 
 {-| Get the latest sync from the Matrix API.
 -}
-syncCredentials : List String -> Sync.SyncInput -> Sync.SyncOutput
+syncCredentials : List String -> Maybe (Sync.SyncInput -> Sync.SyncOutput)
 syncCredentials =
     Sync.sync
 

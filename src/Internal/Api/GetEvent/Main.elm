@@ -8,8 +8,12 @@ getEvent : List String -> Maybe (EventInput -> EventOutput)
 getEvent versions =
     VC.withBottomLayer
         { current = Api.getEventInputV1
-        , version = "v1.2"
+        , version = "r0.5.0"
         }
+        |> VC.sameForVersion "r0.6.0"
+        |> VC.sameForVersion "r0.6.1"
+        |> VC.sameForVersion "v1.1"
+        |> VC.sameForVersion "v1.2"
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"

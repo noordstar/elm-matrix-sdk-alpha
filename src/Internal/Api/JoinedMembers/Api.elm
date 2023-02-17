@@ -17,8 +17,25 @@ type alias JoinedMembersOutputV1 =
     Task X.Error SO1.RoomMemberList
 
 
-joinedMembersInputV1 : JoinedMembersInputV1 -> JoinedMembersOutputV1
-joinedMembersInputV1 data =
+joinedMembersV1 : JoinedMembersInputV1 -> JoinedMembersOutputV1
+joinedMembersV1 data =
+    R.rawApiCall
+        { headers = R.WithAccessToken data.accessToken
+        , method = "GET"
+        , baseUrl = data.baseUrl
+        , path = "/_matrix/client/r0/rooms/{roomId}/joined_members"
+        , pathParams =
+            [ ( "roomId", data.roomId )
+            ]
+        , queryParams = []
+        , bodyParams = []
+        , timeout = Nothing
+        , decoder = \_ -> SO1.roomMemberListDecoder
+        }
+
+
+joinedMembersV2 : JoinedMembersInputV1 -> JoinedMembersOutputV1
+joinedMembersV2 data =
     R.rawApiCall
         { headers = R.WithAccessToken data.accessToken
         , method = "GET"
