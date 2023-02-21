@@ -2,6 +2,7 @@ module Internal.Tools.VersionControl exposing
     ( VersionControl, withBottomLayer
     , MiddleLayer, addMiddleLayer
     , toDict, fromVersion, fromVersionList
+    , isSupported
     , mostRecentFromVersionList, sameForVersion
     )
 
@@ -61,6 +62,11 @@ you prefer to use.
 # Getting functions
 
 @docs toDict, fromVersion, mostRecentFromVerionList, fromVersionList
+
+
+# Checking functions
+
+@docs isSupported
 
 -}
 
@@ -136,6 +142,17 @@ fromVersionList versionList vc =
                 |> Maybe.map (\f -> ( version, f ))
         )
         versionList
+
+
+{-| Sometimes, you may not wish to "just" get the info.
+Sometimes, all you're interested in, is whether a given version is supported.
+
+In such a case, you can use this function to check whether a given version is supported.
+
+-}
+isSupported : String -> VersionControl a b -> Bool
+isSupported version (VersionControl d) =
+    Dict.member version d.versions
 
 
 {-| Get a dict of all available functions.

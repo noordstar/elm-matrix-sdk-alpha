@@ -37,4 +37,4 @@ serverSaysForbidden error =
 
 unsupportedVersion : String
 unsupportedVersion =
-    "UNSUPPORTED HOMESERVER: the homeserver only supports Spec versions that this library doesn't support."
+    "UNSUPPORTED HOMESERVER: the homeserver only supports spec versions that this library doesn't support."

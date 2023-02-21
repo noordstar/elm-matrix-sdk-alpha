@@ -10,12 +10,14 @@ import Internal.Tools.DecodeExtra exposing (opField)
 import Json.Decode as D
 import Json.Encode as E
 
+
 {-| Errors that may return in any circumstance:
 
-- `InternetException` Errors that the `elm/http` library might raise.
-- `SDKException` Errors that this SDK might raise if it doesn't like its own input
-- `ServerException` Errors that the homeserver might bring
-- `UnsupportedSpecVersion` This SDK does not support the needed spec versions for certain operations - usually because a homeserver is extremely old.
+  - `InternetException` Errors that the `elm/http` library might raise.
+  - `SDKException` Errors that this SDK might raise if it doesn't like its own input
+  - `ServerException` Errors that the homeserver might bring
+  - `UnsupportedSpecVersion` This SDK does not support the needed spec versions for certain operations - usually because a homeserver is extremely old.
+
 -}
 type Error
     = InternetException Http.Error
@@ -32,12 +34,14 @@ input.
   - `CouldntGetTimestamp` The Elm core somehow failed to get the current
     Unix timestamp.
   - `NotSupportedYet` Some part of the SDK is intended to be implemented - but it isn't yet.
+  - `NoAccessToken` There is no more access token and no way of getting a new one.
 
 -}
 type ClientError
     = ServerReturnsBadJSON String
     | CouldntGetTimestamp
     | NotSupportedYet String
+    | NoAccessToken
 
 
 {-| Potential error codes that the server may return. If the error is not a
@@ -201,7 +205,7 @@ errorDecoder name code decoder =
 errorToString : Error -> String
 errorToString e =
     case e of
-        UnsupportedVersion ->
+        UnsupportedSpecVersion ->
             ES.unsupportedVersion
 
         SDKException (ServerReturnsBadJSON s) ->

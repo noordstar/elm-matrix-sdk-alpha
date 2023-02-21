@@ -9,8 +9,10 @@ import Internal.Api.Versions.Main as Versions
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
 
+
 type alias Future a =
     Task X.Error a
+
 
 {-| Get a specific event from the Matrix API.
 -}
