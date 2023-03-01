@@ -1,6 +1,7 @@
 module Internal.Values.Room exposing (..)
 
 import Dict exposing (Dict)
+import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.SpecEnums exposing (SessionDescriptionType(..))
 import Internal.Values.Event as Event exposing (BlindEvent, Event)
 import Internal.Values.StateManager exposing (StateManager)
@@ -12,10 +13,17 @@ type Room
     = Room
         { accountData : Dict String E.Value
         , ephemeral : List BlindEvent
-        , events : Dict String Event
+        , events : Hashdict Event
         , roomId : String
         , timeline : Timeline
         }
+
+
+{-| Add the data of a single event to the hashdict of events.
+-}
+addEvent : Event -> Room -> Room
+addEvent event (Room ({ events } as room)) =
+    Room { room | events = Hashdict.insert event events }
 
 
 {-| Add new events as the most recent events.
@@ -31,11 +39,7 @@ addEvents :
 addEvents ({ events } as data) (Room room) =
     Room
         { room
-            | events =
-                events
-                    |> List.map (\e -> ( Event.eventId e, e ))
-                    |> Dict.fromList
-                    |> (\x -> Dict.union x room.events)
+            | events = List.foldl Hashdict.insert room.events events
             , timeline = Timeline.addNewEvents data room.timeline
         }
 
@@ -44,7 +48,7 @@ addEvents ({ events } as data) (Room room) =
 -}
 getEventById : String -> Room -> Maybe Event
 getEventById eventId (Room room) =
-    Dict.get eventId room.events
+    Hashdict.get eventId room.events
 
 
 {-| Get the room's id.

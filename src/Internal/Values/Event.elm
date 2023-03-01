@@ -23,6 +23,27 @@ type Event
         }
 
 
+init :
+    { content : E.Value
+    , eventId : String
+    , originServerTs : Timestamp
+    , roomId : String
+    , sender : String
+    , stateKey : Maybe String
+    , contentType : String
+    , unsigned :
+        Maybe
+            { age : Maybe Int
+            , prevContent : Maybe E.Value
+            , redactedBecause : Maybe Event
+            , transactionId : Maybe String
+            }
+    }
+    -> Event
+init =
+    Event
+
+
 
 {- GETTER FUNCTIONS -}
 
@@ -72,12 +93,6 @@ redactedBecause : Event -> Maybe Event
 redactedBecause (Event e) =
     e.unsigned
         |> Maybe.andThen .redactedBecause
-
-
-age : Event -> Maybe Int
-age (Event e) =
-    e.unsigned
-        |> Maybe.andThen .age
 
 
 transactionId : Event -> Maybe String

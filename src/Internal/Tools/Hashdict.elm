@@ -21,6 +21,17 @@ empty hash =
     Hashdict { hash = hash, values = Dict.empty }
 
 
+fromList : (a -> String) -> List a -> Hashdict a
+fromList hash xs =
+    Hashdict
+        { hash = hash
+        , values =
+            xs
+                |> List.map (\x -> ( hash x, x ))
+                |> Dict.fromList
+        }
+
+
 get : String -> Hashdict a -> Maybe a
 get k (Hashdict h) =
     Dict.get k h.values
@@ -34,6 +45,14 @@ insert v (Hashdict h) =
 keys : Hashdict a -> List String
 keys (Hashdict h) =
     Dict.keys h.values
+
+
+union : Hashdict a -> Hashdict a -> Hashdict a
+union (Hashdict h1) (Hashdict h2) =
+    Hashdict
+        { hash = h1.hash
+        , values = Dict.union h1.values h2.values
+        }
 
 
 values : Hashdict a -> List a

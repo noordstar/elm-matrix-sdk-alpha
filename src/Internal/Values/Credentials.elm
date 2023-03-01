@@ -14,6 +14,20 @@ type Credentials
     = Credentials { access : AccessToken, baseUrl : String, rooms : Hashdict Room, versions : Maybe V.Versions }
 
 
+{-| Add a new access token based on prior information.
+-}
+addAccessToken : String -> Credentials -> Credentials
+addAccessToken token (Credentials ({ access } as data)) =
+    Credentials { data | access = Login.addToken token access }
+
+
+{-| Add the list of versions that is supported by the homeserver.
+-}
+addVersions : V.Versions -> Credentials -> Credentials
+addVersions versions (Credentials data) =
+    Credentials { data | versions = Just versions }
+
+
 {-| Get the stringed access token the Credentials type is using, if any.
 -}
 getAccessToken : Credentials -> Maybe String
