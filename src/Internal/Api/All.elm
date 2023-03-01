@@ -16,6 +16,19 @@ import Json.Encode as E
 import Task exposing (Task)
 
 
+type CredUpdate
+    = MultipleUpdates (List CredUpdate)
+      -- Updates as a result of API calls
+    | GetEvent GetEvent.EventInput GetEvent.EventOutput
+    | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
+    | MessageEventSent SendMessageEvent.SendMessageEventInput SendMessageEvent.SendMessageEventOutput
+    | StateEventSent SendStateKey.SendStateKeyInput SendStateKey.SendStateKeyOutput
+    | SyncUpdate Sync.SyncInput Sync.SyncOutput
+      -- Updates as a result of getting data early
+    | UpdateAccessToken String
+    | UpdateVersions V.Versions
+
+
 type alias Future a =
     Task X.Error a
 
@@ -31,17 +44,28 @@ type alias GetEventInput =
 
 {-| Get a specific event from the Matrix API.
 -}
-getEvent : GetEventInput -> Future GetEvent.EventOutput
+getEvent : GetEventInput -> Future CredUpdate
 getEvent data =
     VG.withInfo2
         (\accessToken versions ->
-            GetEvent.getEvent
-                versions.versions
-                { accessToken = accessToken
-                , baseUrl = data.baseUrl
-                , eventId = data.eventId
-                , roomId = data.roomId
-                }
+            let
+                input : GetEvent.EventInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , eventId = data.eventId
+                    , roomId = data.roomId
+                    }
+            in
+            GetEvent.getEvent versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ GetEvent input output
+                            , UpdateAccessToken accessToken
+                            , UpdateVersions versions
+                            ]
+                    )
         )
         (PreApi.accessToken data.baseUrl data.accessToken)
         (PreApi.versions data.baseUrl data.versions)
@@ -57,16 +81,27 @@ type alias JoinedMembersInput =
 
 {-| Get a list of members who are part of a Matrix room.
 -}
-joinedMembers : JoinedMembersInput -> Future JoinedMembers.JoinedMembersOutput
+joinedMembers : JoinedMembersInput -> Future CredUpdate
 joinedMembers data =
     VG.withInfo2
         (\accessToken versions ->
-            JoinedMembers.joinedMembers
-                versions.versions
-                { accessToken = accessToken
-                , baseUrl = data.baseUrl
-                , roomId = data.roomId
-                }
+            let
+                input : JoinedMembers.JoinedMembersInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , roomId = data.roomId
+                    }
+            in
+            JoinedMembers.joinedMembers versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ JoinedMembersToRoom input output
+                            , UpdateAccessToken accessToken
+                            , UpdateVersions versions
+                            ]
+                    )
         )
         (PreApi.accessToken data.baseUrl data.accessToken)
         (PreApi.versions data.baseUrl data.versions)
@@ -85,19 +120,30 @@ type alias SendMessageEventInput =
 
 {-| Send a message event into a Matrix room.
 -}
-sendMessageEvent : SendMessageEventInput -> Future SendMessageEvent.SendMessageEventOutput
+sendMessageEvent : SendMessageEventInput -> Future CredUpdate
 sendMessageEvent data =
     VG.withInfo3
         (\accessToken versions transactionId ->
-            SendMessageEvent.sendMessageEvent
-                versions.versions
-                { accessToken = accessToken
-                , baseUrl = data.baseUrl
-                , content = data.content
-                , eventType = data.eventType
-                , roomId = data.roomId
-                , transactionId = transactionId
-                }
+            let
+                input : SendMessageEvent.SendMessageEventInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , content = data.content
+                    , eventType = data.eventType
+                    , roomId = data.roomId
+                    , transactionId = transactionId
+                    }
+            in
+            SendMessageEvent.sendMessageEvent versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ MessageEventSent input output
+                            , UpdateAccessToken accessToken
+                            , UpdateVersions versions
+                            ]
+                    )
         )
         (PreApi.accessToken data.baseUrl data.accessToken)
         (PreApi.versions data.baseUrl data.versions)
@@ -129,19 +175,30 @@ type alias SendStateKeyInput =
 
 {-| Send a state event into a Matrix room.
 -}
-sendStateEvent : SendStateKeyInput -> Future SendStateKey.SendStateKeyOutput
+sendStateEvent : SendStateKeyInput -> Future CredUpdate
 sendStateEvent data =
     VG.withInfo2
         (\accessToken versions ->
-            SendStateKey.sendStateKey
-                versions.versions
-                { accessToken = accessToken
-                , baseUrl = data.baseUrl
-                , content = data.content
-                , eventType = data.eventType
-                , roomId = data.roomId
-                , stateKey = data.stateKey
-                }
+            let
+                input : SendStateKey.SendStateKeyInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , content = data.content
+                    , eventType = data.eventType
+                    , roomId = data.roomId
+                    , stateKey = data.stateKey
+                    }
+            in
+            SendStateKey.sendStateKey versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ StateEventSent input output
+                            , UpdateAccessToken accessToken
+                            , UpdateVersions versions
+                            ]
+                    )
         )
         (PreApi.accessToken data.baseUrl data.accessToken)
         (PreApi.versions data.baseUrl data.versions)
@@ -161,20 +218,31 @@ type alias SyncInput =
 
 {-| Get the latest sync from the Matrix API.
 -}
-syncCredentials : SyncInput -> Future Sync.SyncOutput
+syncCredentials : SyncInput -> Future CredUpdate
 syncCredentials data =
     VG.withInfo2
         (\accessToken versions ->
-            Sync.sync
-                versions.versions
-                { accessToken = accessToken
-                , baseUrl = data.baseUrl
-                , filter = data.filter
-                , fullState = data.fullState
-                , setPresence = data.setPresence
-                , since = data.since
-                , timeout = data.timeout
-                }
+            let
+                input : Sync.SyncInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , filter = data.filter
+                    , fullState = data.fullState
+                    , setPresence = data.setPresence
+                    , since = data.since
+                    , timeout = data.timeout
+                    }
+            in
+            Sync.sync versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ SyncUpdate input output
+                            , UpdateAccessToken accessToken
+                            , UpdateVersions versions
+                            ]
+                    )
         )
         (PreApi.accessToken data.baseUrl data.accessToken)
         (PreApi.versions data.baseUrl data.versions)
