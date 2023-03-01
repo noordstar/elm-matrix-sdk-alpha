@@ -4,33 +4,42 @@ module Internal.Values.Credentials exposing (..)
 It handles all communication with the homeserver.
 -}
 
+import Internal.Api.PreApi.Objects.Versions as V
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
+import Internal.Tools.LoginValues as Login exposing (AccessToken(..))
 import Internal.Values.Room as Room exposing (Room)
 
 
 type Credentials
-    = Credentials { access : AccessToken, homeserver : String, rooms : Hashdict Room }
+    = Credentials { access : AccessToken, baseUrl : String, rooms : Hashdict Room, versions : Maybe V.Versions }
 
 
-type AccessToken
-    = AccessToken String
-    | NoAccess
-    | UsernameAndPassword { username : String, password : String, accessToken : Maybe String }
-
-
-{-| Get the access token the Credentials type is using, if any.
+{-| Get the stringed access token the Credentials type is using, if any.
 -}
 getAccessToken : Credentials -> Maybe String
-getAccessToken (Credentials { access }) =
-    case access of
-        AccessToken s ->
-            Just s
+getAccessToken =
+    getAccessTokenType >> Login.getToken
 
-        NoAccess ->
-            Nothing
 
-        UsernameAndPassword { accessToken } ->
-            accessToken
+{-| Get the access token type that stores the Credentials's ways of getting access.
+-}
+getAccessTokenType : Credentials -> AccessToken
+getAccessTokenType (Credentials { access }) =
+    access
+
+
+{-| Get the baseUrl that the credentials accesses.
+-}
+getBaseUrl : Credentials -> String
+getBaseUrl (Credentials { baseUrl }) =
+    baseUrl
+
+
+{-| Get the versions that the homeserver supports.
+-}
+getVersions : Credentials -> Maybe V.Versions
+getVersions (Credentials { versions }) =
+    versions
 
 
 {-| Internal value to be used as a "default" for credentials settings.
@@ -39,8 +48,9 @@ defaultCredentials : String -> Credentials
 defaultCredentials homeserver =
     Credentials
         { access = NoAccess
-        , homeserver = homeserver
+        , baseUrl = homeserver
         , rooms = Hashdict.empty Room.roomId
+        , versions = Nothing
         }
 
 
@@ -59,7 +69,7 @@ fromLoginCredentials : { username : String, password : String, homeserver : Stri
 fromLoginCredentials { username, password, homeserver } =
     case defaultCredentials homeserver of
         Credentials c ->
-            Credentials { c | access = UsernameAndPassword { username = username, password = password, accessToken = Nothing } }
+            Credentials { c | access = UsernameAndPassword { username = username, password = password, token = Nothing } }
 
 
 {-| Get a room from the Credentials type by the room's id.
