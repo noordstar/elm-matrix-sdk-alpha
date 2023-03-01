@@ -6,7 +6,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-getEvent : List String -> Maybe (EventInput -> Task X.Error EventOutput)
+getEvent : List String -> EventInput -> Task X.Error EventOutput
 getEvent versions =
     VC.withBottomLayer
         { current = Api.getEventInputV1
@@ -20,6 +20,7 @@ getEvent versions =
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
         |> VC.mostRecentFromVersionList versions
+        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
 
 
 type alias EventOutput =

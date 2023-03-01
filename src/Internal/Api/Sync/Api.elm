@@ -45,7 +45,7 @@ syncV1 data =
         , bodyParams = []
         , timeout =
             data.timeout
-                |> Maybe.map ((+) 10000)
+                |> Maybe.map ((*) 1000)
                 |> Maybe.map toFloat
         , decoder = \_ -> SO1.syncDecoder
         }
@@ -69,7 +69,7 @@ syncV2 data =
         , bodyParams = []
         , timeout =
             data.timeout
-                |> Maybe.map ((+) 10000)
+                |> Maybe.map ((*) 1000)
                 |> Maybe.map toFloat
         , decoder = \_ -> SO2.syncDecoder
         }

@@ -6,7 +6,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sendStateKey : List String -> Maybe (SendStateKeyInput -> Task X.Error SendStateKeyOutput)
+sendStateKey : List String -> SendStateKeyInput -> Task X.Error SendStateKeyOutput
 sendStateKey versions =
     VC.withBottomLayer
         { current = Api.sendStateKeyV1
@@ -31,6 +31,7 @@ sendStateKey versions =
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
         |> VC.mostRecentFromVersionList versions
+        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
 
 
 type alias SendStateKeyInput =

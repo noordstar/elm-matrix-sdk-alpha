@@ -7,7 +7,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sync : List String -> Maybe (SyncInput -> Task X.Error SyncOutput)
+sync : List String -> SyncInput -> Task X.Error SyncOutput
 sync versions =
     VC.withBottomLayer
         { current = Api.syncV1
@@ -22,6 +22,7 @@ sync versions =
             }
         |> VC.sameForVersion "v1.5"
         |> VC.mostRecentFromVersionList versions
+        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
 
 
 type alias SyncInput =

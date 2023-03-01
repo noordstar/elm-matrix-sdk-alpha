@@ -6,7 +6,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-joinedMembers : List String -> Maybe (JoinedMembersInput -> Task X.Error JoinedMembersOutput)
+joinedMembers : List String -> JoinedMembersInput -> Task X.Error JoinedMembersOutput
 joinedMembers versions =
     VC.withBottomLayer
         { current = Api.joinedMembersV1
@@ -31,6 +31,7 @@ joinedMembers versions =
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
         |> VC.mostRecentFromVersionList versions
+        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
 
 
 type alias JoinedMembersInput =

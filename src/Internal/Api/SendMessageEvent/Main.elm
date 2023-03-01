@@ -6,7 +6,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sendMessageEvent : List String -> Maybe (SendMessageEventInput -> Task X.Error SendMessageEventOutput)
+sendMessageEvent : List String -> SendMessageEventInput -> Task X.Error SendMessageEventOutput
 sendMessageEvent versions =
     VC.withBottomLayer
         { current = Api.sendMessageEventV1
@@ -31,6 +31,7 @@ sendMessageEvent versions =
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
         |> VC.mostRecentFromVersionList versions
+        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
 
 
 type alias SendMessageEventInput =
