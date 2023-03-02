@@ -9,11 +9,14 @@ This file combines the internal functions with the API endpoints to create a ful
 
 import Dict
 import Internal.Api.All as Api
-import Internal.Room as Room
 import Internal.Event as Event
+import Internal.Room as Room
+import Internal.Tools.Exceptions as X
 import Internal.Values.Credentials as Internal
 import Internal.Values.Event as IEvent
 import Internal.Values.Room as IRoom
+import Internal.Values.StateManager as StateManager
+import Task exposing (Task)
 
 
 {-| You can consider the `Credentials` type as a large ring of keys,
@@ -56,70 +59,128 @@ getRoomById roomId credentials =
                 }
             )
 
+
 {-| Insert an internal room type into the credentials.
 -}
 insertInternalRoom : IRoom.Room -> Credentials -> Credentials
-insertInternalRoom = Internal.insertRoom
+insertInternalRoom =
+    Internal.insertRoom
 
-{-| Internal a full room type into the credentials. -}
+
+{-| Internal a full room type into the credentials.
+-}
 insertRoom : Room.Room -> Credentials -> Credentials
-insertRoom = Room.internalValue >> insertInternalRoom
+insertRoom =
+    Room.internalValue >> insertInternalRoom
 
-{-| Update the Credentials type with new values -}
+
+{-| Update the Credentials type with new values
+-}
 updateWith : Api.CredUpdate -> Credentials -> Credentials
 updateWith credUpdate credentials =
     case credUpdate of
         Api.MultipleUpdates updates ->
             List.foldl updateWith credentials updates
-        
+
         Api.GetEvent input output ->
             case getRoomById input.roomId credentials of
                 Just room ->
                     output
-                        |> IEvent.initFromGetEvent
+                        |> Event.initFromGetEvent
                         |> Room.addInternalEvent
                         |> (|>) room
                         |> insertRoom
                         |> (|>) credentials
-                
+
                 Nothing ->
                     credentials
-        
-        Api.JoinedMembersToRoom _ _ ->
-            credentials -- TODO
-        
-        Api.MessageEventSent _ _ ->
-            credentials -- TODO
-        
-        Api.StateEventSent _ _ ->
-            credentials -- TODO
 
+        Api.JoinedMembersToRoom _ _ ->
+            credentials
+
+        -- TODO
+        Api.MessageEventSent _ _ ->
+            credentials
+
+        -- TODO
+        Api.StateEventSent _ _ ->
+            credentials
+
+        -- TODO
         Api.SyncUpdate input output ->
             let
-                rooms =
+                jRooms =
                     output.rooms
-                    |> Maybe.map .join
-                    |> Maybe.withDefault Dict.empty
-                    |> Dict.toList
-                    |> List.map
-                        (\(roomId, jroom)->
-                            case getRoomById roomId credentials of
-                                -- Update existing room
-                                Just room ->
-                                    room
-                                    |> Room.internalValue
-                                    |> IRoom.addEvents
-                                    
+                        |> Maybe.map .join
+                        |> Maybe.withDefault Dict.empty
+                        |> Dict.toList
+                        |> List.map
+                            (\( roomId, jroom ) ->
+                                case getRoomById roomId credentials of
+                                    -- Update existing room
+                                    Just room ->
+                                        room
+                                            |> Room.internalValue
+                                            |> IRoom.addEvents
+                                                { events =
+                                                    jroom.timeline
+                                                        |> Maybe.map .events
+                                                        |> Maybe.withDefault []
+                                                        |> List.map (Event.initFromClientEventWithoutRoomId roomId)
+                                                , nextBatch = output.nextBatch
+                                                , prevBatch =
+                                                    jroom.timeline
+                                                        |> Maybe.andThen .prevBatch
+                                                        |> Maybe.withDefault (Maybe.withDefault "" input.since)
+                                                , stateDelta =
+                                                    jroom.state
+                                                        |> Maybe.map
+                                                            (.events
+                                                                >> List.map (Event.initFromClientEventWithoutRoomId roomId)
+                                                                >> StateManager.fromEventList
+                                                            )
+                                                }
 
-                                -- Add new room
-                                Nothing ->
-                                    jroom
-                        )
+                                    -- Add new room
+                                    Nothing ->
+                                        Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId } jroom
+                            )
             in
-                credentials
-        
+            List.foldl Internal.insertRoom (Internal.addSince output.nextBatch credentials) jRooms
+
         Api.UpdateAccessToken token ->
             Internal.addAccessToken token credentials
-        
+
         Api.UpdateVersions versions ->
             Internal.addVersions versions credentials
+
+
+{-| Synchronize credentials
+-}
+sync : Credentials -> Task X.Error Api.CredUpdate
+sync credentials =
+    Api.syncCredentials
+        { accessToken = Internal.getAccessTokenType credentials
+        , baseUrl = Internal.getBaseUrl credentials
+        , filter = Nothing
+        , fullState = Nothing
+        , setPresence = Nothing
+        , since = Internal.getSince credentials
+        , timeout = Just 30
+        , versions = Internal.getVersions credentials
+        }
+
+
+{-| Get a list of all synchronised rooms.
+-}
+rooms : Credentials -> List Room.Room
+rooms credentials =
+    credentials
+        |> Internal.getRooms
+        |> ({ accessToken = Internal.getAccessTokenType credentials
+            , baseUrl = Internal.getBaseUrl credentials
+            , versions = Internal.getVersions credentials
+            }
+                |> Room.init
+                |> List.map
+           )

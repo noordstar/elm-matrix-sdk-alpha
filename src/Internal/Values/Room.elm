@@ -56,3 +56,10 @@ getEventById eventId (Room room) =
 roomId : Room -> String
 roomId (Room room) =
     room.roomId
+
+
+{-| Get the most recent events.
+-}
+mostRecentEvents : Room -> List Event
+mostRecentEvents (Room room) =
+    Timeline.mostRecentEvents room.timeline

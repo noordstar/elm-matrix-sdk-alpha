@@ -11,7 +11,13 @@ import Internal.Values.Room as Room exposing (Room)
 
 
 type Credentials
-    = Credentials { access : AccessToken, baseUrl : String, rooms : Hashdict Room, versions : Maybe V.Versions }
+    = Credentials
+        { access : AccessToken
+        , baseUrl : String
+        , rooms : Hashdict Room
+        , since : Maybe String
+        , versions : Maybe V.Versions
+        }
 
 
 {-| Add a new access token based on prior information.
@@ -26,6 +32,13 @@ addAccessToken token (Credentials ({ access } as data)) =
 addVersions : V.Versions -> Credentials -> Credentials
 addVersions versions (Credentials data) =
     Credentials { data | versions = Just versions }
+
+
+{-| Add a new `since` token to sync from.
+-}
+addSince : String -> Credentials -> Credentials
+addSince since (Credentials data) =
+    Credentials { data | since = Just since }
 
 
 {-| Get the stringed access token the Credentials type is using, if any.
@@ -64,8 +77,16 @@ defaultCredentials homeserver =
         { access = NoAccess
         , baseUrl = homeserver
         , rooms = Hashdict.empty Room.roomId
+        , since = Nothing
         , versions = Nothing
         }
+
+
+{-| Get the latest `since` token.
+-}
+getSince : Credentials -> Maybe String
+getSince (Credentials { since }) =
+    since
 
 
 {-| Create a Credentials type using an unknown access token.
@@ -102,3 +123,10 @@ insertRoom : Room -> Credentials -> Credentials
 insertRoom room (Credentials cred) =
     Credentials
         { cred | rooms = Hashdict.insert room cred.rooms }
+
+
+{-| Get a list of all synchronised rooms.
+-}
+getRooms : Credentials -> List Room
+getRooms (Credentials { rooms }) =
+    Hashdict.values rooms

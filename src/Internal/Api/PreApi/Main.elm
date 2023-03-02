@@ -17,7 +17,7 @@ import Task
 import Time
 
 
-accessToken : String -> AccessToken -> ValueGetter String
+accessToken : String -> AccessToken -> ValueGetter X.Error String
 accessToken baseUrl t =
     { value =
         case t of
@@ -37,7 +37,7 @@ accessToken baseUrl t =
     }
 
 
-transactionId : (Int -> String) -> ValueGetter String
+transactionId : (Int -> String) -> ValueGetter X.Error String
 transactionId seeder =
     { value = Nothing
     , getValue =
@@ -47,7 +47,7 @@ transactionId seeder =
     }
 
 
-versions : String -> Maybe V.Versions -> ValueGetter V.Versions
+versions : String -> Maybe V.Versions -> ValueGetter X.Error V.Versions
 versions baseUrl mVersions =
     { value = mVersions
     , getValue =

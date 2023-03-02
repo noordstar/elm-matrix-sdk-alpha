@@ -10,7 +10,7 @@ resend other events or forward them elsewhere.
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
 import Internal.Api.PreApi.Objects.Versions as V
-import Internal.Api.Sync.V1.SpecObjects as SyncSO
+import Internal.Api.Sync.V2.SpecObjects as SyncSO
 import Internal.Tools.LoginValues exposing (AccessToken)
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
@@ -86,7 +86,7 @@ initFromClientEventWithoutRoomId rId output =
                     (\(SyncSO.UnsignedData data) ->
                         { age = data.age
                         , prevContent = data.prevContent
-                        , redactedBecause = Maybe.map (initFromClientEventWithoutRoomId roomId) data.redactedBecause
+                        , redactedBecause = Maybe.map (initFromClientEventWithoutRoomId rId) data.redactedBecause
                         , transactionId = data.transactionId
                         }
                     )

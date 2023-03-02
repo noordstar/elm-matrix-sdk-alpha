@@ -3,13 +3,18 @@ module Internal.Room exposing (..)
 {-| The `Room` type represents a Matrix Room. In here, you will find utilities to ask information about a room.
 -}
 
+import Dict
 import Internal.Api.All as Api
 import Internal.Api.PreApi.Objects.Versions as V
+import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Event as Event exposing (Event)
 import Internal.Tools.Exceptions as X
+import Internal.Tools.Hashdict as Hashdict
 import Internal.Tools.LoginValues exposing (AccessToken)
 import Internal.Values.Event as IEvent
 import Internal.Values.Room as Internal
+import Internal.Values.StateManager as StateManager
+import Internal.Values.Timeline as Timeline
 import Json.Encode as E
 import Task exposing (Task)
 
@@ -28,6 +33,57 @@ type Room
         , accessToken : AccessToken
         , baseUrl : String
         , versions : Maybe V.Versions
+        }
+
+
+{-| Create a new object from a joined room.
+-}
+initFromJoinedRoom : { roomId : String, nextBatch : String } -> Sync.JoinedRoom -> Internal.Room
+initFromJoinedRoom data jroom =
+    Internal.Room
+        { accountData =
+            jroom.accountData
+                |> Maybe.map .events
+                |> Maybe.withDefault []
+                |> List.map (\{ contentType, content } -> ( contentType, content ))
+                |> Dict.fromList
+        , ephemeral =
+            jroom.ephemeral
+                |> Maybe.map .events
+                |> Maybe.withDefault []
+                |> List.map IEvent.BlindEvent
+        , events =
+            jroom.timeline
+                |> Maybe.map .events
+                |> Maybe.withDefault []
+                |> List.map (Event.initFromClientEventWithoutRoomId data.roomId)
+                |> Hashdict.fromList IEvent.eventId
+        , roomId = data.roomId
+        , timeline =
+            jroom.timeline
+                |> Maybe.map
+                    (\timeline ->
+                        Timeline.newFromEvents
+                            { events = List.map (Event.initFromClientEventWithoutRoomId data.roomId) timeline.events
+                            , nextBatch = data.nextBatch
+                            , prevBatch = timeline.prevBatch
+                            , stateDelta =
+                                jroom.state
+                                    |> Maybe.map
+                                        (.events
+                                            >> List.map (Event.initFromClientEventWithoutRoomId data.roomId)
+                                            >> StateManager.fromEventList
+                                        )
+                            }
+                    )
+                |> Maybe.withDefault
+                    (Timeline.newFromEvents
+                        { events = []
+                        , nextBatch = data.nextBatch
+                        , prevBatch = Nothing
+                        , stateDelta = Nothing
+                        }
+                    )
         }
 
 
@@ -64,6 +120,21 @@ init { accessToken, baseUrl, versions } room =
 internalValue : Room -> Internal.Room
 internalValue (Room { room }) =
     room
+
+
+{-| Get the most recent events.
+-}
+mostRecentEvents : Room -> List Event
+mostRecentEvents (Room data) =
+    data.room
+        |> Internal.mostRecentEvents
+        |> List.map
+            (Event.init
+                { accessToken = data.accessToken
+                , baseUrl = data.baseUrl
+                , versions = data.versions
+                }
+            )
 
 
 {-| Retrieves the ID of the Matrix room associated with the given `Room`.
