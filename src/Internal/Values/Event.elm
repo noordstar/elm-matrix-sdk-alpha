@@ -4,8 +4,8 @@ import Internal.Tools.Timestamp exposing (Timestamp)
 import Json.Encode as E
 
 
-type Event
-    = Event
+type IEvent
+    = IEvent
         { content : E.Value
         , eventId : String
         , originServerTs : Timestamp
@@ -17,7 +17,7 @@ type Event
             Maybe
                 { age : Maybe Int
                 , prevContent : Maybe E.Value
-                , redactedBecause : Maybe Event
+                , redactedBecause : Maybe IEvent
                 , transactionId : Maybe String
                 }
         }
@@ -35,68 +35,68 @@ init :
         Maybe
             { age : Maybe Int
             , prevContent : Maybe E.Value
-            , redactedBecause : Maybe Event
+            , redactedBecause : Maybe IEvent
             , transactionId : Maybe String
             }
     }
-    -> Event
+    -> IEvent
 init =
-    Event
+    IEvent
 
 
 
 {- GETTER FUNCTIONS -}
 
 
-content : Event -> E.Value
-content (Event e) =
+content : IEvent -> E.Value
+content (IEvent e) =
     e.content
 
 
-eventId : Event -> String
-eventId (Event e) =
+eventId : IEvent -> String
+eventId (IEvent e) =
     e.eventId
 
 
-originServerTs : Event -> Timestamp
-originServerTs (Event e) =
+originServerTs : IEvent -> Timestamp
+originServerTs (IEvent e) =
     e.originServerTs
 
 
-roomId : Event -> String
-roomId (Event e) =
+roomId : IEvent -> String
+roomId (IEvent e) =
     e.roomId
 
 
-sender : Event -> String
-sender (Event e) =
+sender : IEvent -> String
+sender (IEvent e) =
     e.sender
 
 
-stateKey : Event -> Maybe String
-stateKey (Event e) =
+stateKey : IEvent -> Maybe String
+stateKey (IEvent e) =
     e.stateKey
 
 
-contentType : Event -> String
-contentType (Event e) =
+contentType : IEvent -> String
+contentType (IEvent e) =
     e.contentType
 
 
-age : Event -> Maybe Int
-age (Event e) =
+age : IEvent -> Maybe Int
+age (IEvent e) =
     e.unsigned
         |> Maybe.andThen .age
 
 
-redactedBecause : Event -> Maybe Event
-redactedBecause (Event e) =
+redactedBecause : IEvent -> Maybe IEvent
+redactedBecause (IEvent e) =
     e.unsigned
         |> Maybe.andThen .redactedBecause
 
 
-transactionId : Event -> Maybe String
-transactionId (Event e) =
+transactionId : IEvent -> Maybe String
+transactionId (IEvent e) =
     e.unsigned
         |> Maybe.andThen .transactionId
 

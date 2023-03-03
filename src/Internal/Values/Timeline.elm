@@ -5,7 +5,7 @@ module Internal.Values.Timeline exposing (..)
 
 import Internal.Config.Leaking as Leaking
 import Internal.Tools.Fold as Fold
-import Internal.Values.Event as Event exposing (Event)
+import Internal.Values.Event as Event exposing (IEvent)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 
 
@@ -13,7 +13,7 @@ type Timeline
     = Timeline
         { prevBatch : String
         , nextBatch : String
-        , events : List Event
+        , events : List IEvent
         , stateAtStart : StateManager
         , previous : BeforeTimeline
         }
@@ -28,16 +28,17 @@ type BeforeTimeline
 {-| Add a new batch of events to the front of the timeline.
 -}
 addNewEvents :
-    { events : List Event
+    { events : List IEvent
+    , limited : Bool
     , nextBatch : String
     , prevBatch : String
     , stateDelta : Maybe StateManager
     }
     -> Timeline
     -> Timeline
-addNewEvents { events, nextBatch, prevBatch, stateDelta } (Timeline t) =
+addNewEvents { events, limited, nextBatch, prevBatch, stateDelta } (Timeline t) =
     Timeline
-        (if prevBatch == t.nextBatch then
+        (if prevBatch == t.nextBatch || not limited then
             { t
                 | events = t.events ++ events
                 , nextBatch = nextBatch
@@ -63,7 +64,7 @@ addNewEvents { events, nextBatch, prevBatch, stateDelta } (Timeline t) =
 {-| Create a new timeline.
 -}
 newFromEvents :
-    { events : List Event
+    { events : List IEvent
     , nextBatch : String
     , prevBatch : Maybe String
     , stateDelta : Maybe StateManager
@@ -89,7 +90,7 @@ newFromEvents { events, nextBatch, prevBatch, stateDelta } =
 {-| Insert events starting from a known batch token.
 -}
 insertEvents :
-    { events : List Event
+    { events : List IEvent
     , nextBatch : String
     , prevBatch : String
     , stateDelta : Maybe StateManager
@@ -157,7 +158,7 @@ localSize =
 
 {-| Get a list of the most recent events recorded.
 -}
-mostRecentEvents : Timeline -> List Event
+mostRecentEvents : Timeline -> List IEvent
 mostRecentEvents (Timeline t) =
     t.events
 
@@ -180,7 +181,7 @@ mostRecentState (Timeline t) =
 
 {-| Get the timeline's room state at any given event. The function returns `Nothing` if the event is not found in the timeline.
 -}
-stateAtEvent : Event -> Timeline -> Maybe StateManager
+stateAtEvent : IEvent -> Timeline -> Maybe StateManager
 stateAtEvent event (Timeline t) =
     if
         t.events

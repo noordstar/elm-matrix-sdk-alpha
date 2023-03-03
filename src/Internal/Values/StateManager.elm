@@ -1,14 +1,14 @@
 module Internal.Values.StateManager exposing (..)
 
 import Dict exposing (Dict)
-import Internal.Values.Event as Event exposing (Event)
+import Internal.Values.Event as Event exposing (IEvent)
 
 
 type alias StateManager =
-    Dict ( String, String ) Event
+    Dict ( String, String ) IEvent
 
 
-addEvent : Event -> StateManager -> StateManager
+addEvent : IEvent -> StateManager -> StateManager
 addEvent event oldManager =
     case Event.stateKey event of
         Just key ->
@@ -18,7 +18,7 @@ addEvent event oldManager =
             oldManager
 
 
-getStateEvent : String -> String -> StateManager -> Maybe Event
+getStateEvent : String -> String -> StateManager -> Maybe IEvent
 getStateEvent eventType stateKey =
     Dict.get ( eventType, stateKey )
 
@@ -28,13 +28,13 @@ updateRoomStateWith =
     Dict.union
 
 
-fromEvent : Event -> StateManager
+fromEvent : IEvent -> StateManager
 fromEvent event =
     Dict.empty
         |> addEvent event
 
 
-fromEventList : List Event -> StateManager
+fromEventList : List IEvent -> StateManager
 fromEventList =
     List.foldl addEvent Dict.empty
 

@@ -54,3 +54,28 @@ addToken s t =
                 , password = password
                 , token = Just s
                 }
+
+
+addUsernameAndPassword : { username : String, password : String } -> AccessToken -> AccessToken
+addUsernameAndPassword { username, password } t =
+    case t of
+        NoAccess ->
+            UsernameAndPassword
+                { username = username
+                , password = password
+                , token = Nothing
+                }
+
+        AccessToken a ->
+            UsernameAndPassword
+                { username = username
+                , password = password
+                , token = Just a
+                }
+
+        UsernameAndPassword { token } ->
+            UsernameAndPassword
+                { username = username
+                , password = password
+                , token = token
+                }

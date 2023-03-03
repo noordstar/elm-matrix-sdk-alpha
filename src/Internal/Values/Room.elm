@@ -3,17 +3,17 @@ module Internal.Values.Room exposing (..)
 import Dict exposing (Dict)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.SpecEnums exposing (SessionDescriptionType(..))
-import Internal.Values.Event as Event exposing (BlindEvent, Event)
+import Internal.Values.Event exposing (BlindEvent, IEvent)
 import Internal.Values.StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Json.Encode as E
 
 
-type Room
-    = Room
+type IRoom
+    = IRoom
         { accountData : Dict String E.Value
         , ephemeral : List BlindEvent
-        , events : Hashdict Event
+        , events : Hashdict IEvent
         , roomId : String
         , timeline : Timeline
         }
@@ -21,23 +21,24 @@ type Room
 
 {-| Add the data of a single event to the hashdict of events.
 -}
-addEvent : Event -> Room -> Room
-addEvent event (Room ({ events } as room)) =
-    Room { room | events = Hashdict.insert event events }
+addEvent : IEvent -> IRoom -> IRoom
+addEvent event (IRoom ({ events } as room)) =
+    IRoom { room | events = Hashdict.insert event events }
 
 
 {-| Add new events as the most recent events.
 -}
 addEvents :
-    { events : List Event
+    { events : List IEvent
+    , limited : Bool
     , nextBatch : String
     , prevBatch : String
     , stateDelta : Maybe StateManager
     }
-    -> Room
-    -> Room
-addEvents ({ events } as data) (Room room) =
-    Room
+    -> IRoom
+    -> IRoom
+addEvents ({ events } as data) (IRoom room) =
+    IRoom
         { room
             | events = List.foldl Hashdict.insert room.events events
             , timeline = Timeline.addNewEvents data room.timeline
@@ -46,20 +47,20 @@ addEvents ({ events } as data) (Room room) =
 
 {-| Get an event by its id.
 -}
-getEventById : String -> Room -> Maybe Event
-getEventById eventId (Room room) =
+getEventById : String -> IRoom -> Maybe IEvent
+getEventById eventId (IRoom room) =
     Hashdict.get eventId room.events
 
 
 {-| Get the room's id.
 -}
-roomId : Room -> String
-roomId (Room room) =
+roomId : IRoom -> String
+roomId (IRoom room) =
     room.roomId
 
 
 {-| Get the most recent events.
 -}
-mostRecentEvents : Room -> List Event
-mostRecentEvents (Room room) =
+mostRecentEvents : IRoom -> List IEvent
+mostRecentEvents (IRoom room) =
     Timeline.mostRecentEvents room.timeline

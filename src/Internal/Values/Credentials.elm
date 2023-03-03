@@ -4,114 +4,53 @@ module Internal.Values.Credentials exposing (..)
 It handles all communication with the homeserver.
 -}
 
-import Internal.Api.PreApi.Objects.Versions as V
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
-import Internal.Tools.LoginValues as Login exposing (AccessToken(..))
-import Internal.Values.Room as Room exposing (Room)
+import Internal.Values.Room as Room exposing (IRoom)
 
 
-type Credentials
-    = Credentials
-        { access : AccessToken
-        , baseUrl : String
-        , rooms : Hashdict Room
+type ICredentials
+    = ICredentials
+        { rooms : Hashdict IRoom
         , since : Maybe String
-        , versions : Maybe V.Versions
         }
-
-
-{-| Add a new access token based on prior information.
--}
-addAccessToken : String -> Credentials -> Credentials
-addAccessToken token (Credentials ({ access } as data)) =
-    Credentials { data | access = Login.addToken token access }
-
-
-{-| Add the list of versions that is supported by the homeserver.
--}
-addVersions : V.Versions -> Credentials -> Credentials
-addVersions versions (Credentials data) =
-    Credentials { data | versions = Just versions }
 
 
 {-| Add a new `since` token to sync from.
 -}
-addSince : String -> Credentials -> Credentials
-addSince since (Credentials data) =
-    Credentials { data | since = Just since }
-
-
-{-| Get the stringed access token the Credentials type is using, if any.
--}
-getAccessToken : Credentials -> Maybe String
-getAccessToken =
-    getAccessTokenType >> Login.getToken
-
-
-{-| Get the access token type that stores the Credentials's ways of getting access.
--}
-getAccessTokenType : Credentials -> AccessToken
-getAccessTokenType (Credentials { access }) =
-    access
-
-
-{-| Get the baseUrl that the credentials accesses.
--}
-getBaseUrl : Credentials -> String
-getBaseUrl (Credentials { baseUrl }) =
-    baseUrl
-
-
-{-| Get the versions that the homeserver supports.
--}
-getVersions : Credentials -> Maybe V.Versions
-getVersions (Credentials { versions }) =
-    versions
-
-
-{-| Internal value to be used as a "default" for credentials settings.
--}
-defaultCredentials : String -> Credentials
-defaultCredentials homeserver =
-    Credentials
-        { access = NoAccess
-        , baseUrl = homeserver
-        , rooms = Hashdict.empty Room.roomId
-        , since = Nothing
-        , versions = Nothing
-        }
-
-
-{-| Get the latest `since` token.
--}
-getSince : Credentials -> Maybe String
-getSince (Credentials { since }) =
-    since
-
-
-{-| Create a Credentials type using an unknown access token.
--}
-fromAccessToken : { accessToken : String, homeserver : String } -> Credentials
-fromAccessToken { accessToken, homeserver } =
-    case defaultCredentials homeserver of
-        Credentials c ->
-            Credentials { c | access = AccessToken accessToken }
-
-
-{-| Create a Credentials type using a username and password.
--}
-fromLoginCredentials : { username : String, password : String, homeserver : String } -> Credentials
-fromLoginCredentials { username, password, homeserver } =
-    case defaultCredentials homeserver of
-        Credentials c ->
-            Credentials { c | access = UsernameAndPassword { username = username, password = password, token = Nothing } }
+addSince : String -> ICredentials -> ICredentials
+addSince since (ICredentials data) =
+    ICredentials { data | since = Just since }
 
 
 {-| Get a room from the Credentials type by the room's id.
 -}
-getRoomById : String -> Credentials -> Maybe Room
-getRoomById roomId (Credentials cred) =
+getRoomById : String -> ICredentials -> Maybe IRoom
+getRoomById roomId (ICredentials cred) =
     Hashdict.get roomId cred.rooms
+
+
+{-| Get a list of all synchronised rooms.
+-}
+getRooms : ICredentials -> List IRoom
+getRooms (ICredentials { rooms }) =
+    Hashdict.values rooms
+
+
+{-| Get the latest `since` token.
+-}
+getSince : ICredentials -> Maybe String
+getSince (ICredentials { since }) =
+    since
+
+
+{-| Create new empty Credentials.
+-}
+init : ICredentials
+init =
+    ICredentials
+        { rooms = Hashdict.empty Room.roomId
+        , since = Nothing
+        }
 
 
 {-| Add a new room to the Credentials type. If a room with this id already exists, it is overwritten.
@@ -119,14 +58,7 @@ getRoomById roomId (Credentials cred) =
 This function can hence also be used as an update function for rooms.
 
 -}
-insertRoom : Room -> Credentials -> Credentials
-insertRoom room (Credentials cred) =
-    Credentials
+insertRoom : IRoom -> ICredentials -> ICredentials
+insertRoom room (ICredentials cred) =
+    ICredentials
         { cred | rooms = Hashdict.insert room cred.rooms }
-
-
-{-| Get a list of all synchronised rooms.
--}
-getRooms : Credentials -> List Room
-getRooms (Credentials { rooms }) =
-    Hashdict.values rooms

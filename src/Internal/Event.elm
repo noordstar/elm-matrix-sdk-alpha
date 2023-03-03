@@ -9,9 +9,8 @@ resend other events or forward them elsewhere.
 
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
-import Internal.Api.PreApi.Objects.Versions as V
 import Internal.Api.Sync.V2.SpecObjects as SyncSO
-import Internal.Tools.LoginValues exposing (AccessToken)
+import Internal.Context exposing (Context)
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
 import Json.Encode as E
@@ -21,30 +20,26 @@ import Json.Encode as E
 -}
 type Event
     = Event
-        { event : Internal.Event
-        , accessToken : AccessToken
-        , baseUrl : String
-        , versions : Maybe V.Versions
+        { event : Internal.IEvent
+        , context : Context
         }
 
 
 {-| Using the credentials' background information and an internal event type,
 create an interactive event type.
 -}
-init : { accessToken : AccessToken, baseUrl : String, versions : Maybe V.Versions } -> Internal.Event -> Event
-init { accessToken, baseUrl, versions } event =
+withContext : Context -> Internal.IEvent -> Event
+withContext context event =
     Event
         { event = event
-        , accessToken = accessToken
-        , baseUrl = baseUrl
-        , versions = versions
+        , context = context
         }
 
 
 {-| Create an internal event type from an API endpoint event object.
 This function is placed in this file to respect file hierarchy and avoid circular imports.
 -}
-initFromGetEvent : GetEvent.EventOutput -> Internal.Event
+initFromGetEvent : GetEvent.EventOutput -> Internal.IEvent
 initFromGetEvent output =
     Internal.init
         { content = output.content
@@ -70,7 +65,7 @@ initFromGetEvent output =
 {-| Create an internal event type from an API endpoint event object.
 This function is placed in this file to respect file hierarchy and avoid circular imports.
 -}
-initFromClientEventWithoutRoomId : String -> SyncSO.ClientEventWithoutRoomId -> Internal.Event
+initFromClientEventWithoutRoomId : String -> SyncSO.ClientEventWithoutRoomId -> Internal.IEvent
 initFromClientEventWithoutRoomId rId output =
     Internal.init
         { content = output.content
@@ -95,8 +90,8 @@ initFromClientEventWithoutRoomId rId output =
 
 {-| Get the internal event type that is hidden in the interactive event type.
 -}
-internalValue : Event -> Internal.Event
-internalValue (Event { event }) =
+withoutContext : Event -> Internal.IEvent
+withoutContext (Event { event }) =
     event
 
 
@@ -106,42 +101,42 @@ internalValue (Event { event }) =
 
 content : Event -> E.Value
 content =
-    internalValue >> Internal.content
+    withoutContext >> Internal.content
 
 
 eventId : Event -> String
 eventId =
-    internalValue >> Internal.eventId
+    withoutContext >> Internal.eventId
 
 
 originServerTs : Event -> Timestamp
 originServerTs =
-    internalValue >> Internal.originServerTs
+    withoutContext >> Internal.originServerTs
 
 
 roomId : Event -> String
 roomId =
-    internalValue >> Internal.roomId
+    withoutContext >> Internal.roomId
 
 
 sender : Event -> String
 sender =
-    internalValue >> Internal.sender
+    withoutContext >> Internal.sender
 
 
 stateKey : Event -> Maybe String
 stateKey =
-    internalValue >> Internal.stateKey
+    withoutContext >> Internal.stateKey
 
 
 contentType : Event -> String
 contentType =
-    internalValue >> Internal.contentType
+    withoutContext >> Internal.contentType
 
 
 age : Event -> Maybe Int
 age =
-    internalValue >> Internal.age
+    withoutContext >> Internal.age
 
 
 redactedBecause : Event -> Maybe Event
@@ -156,4 +151,4 @@ redactedBecause (Event data) =
 
 transactionId : Event -> Maybe String
 transactionId =
-    internalValue >> Internal.transactionId
+    withoutContext >> Internal.transactionId

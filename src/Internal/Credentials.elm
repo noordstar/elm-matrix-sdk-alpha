@@ -9,6 +9,7 @@ This file combines the internal functions with the API endpoints to create a ful
 
 import Dict
 import Internal.Api.All as Api
+import Internal.Context as Context exposing (Context)
 import Internal.Event as Event
 import Internal.Room as Room
 import Internal.Tools.Exceptions as X
@@ -24,8 +25,11 @@ and Elm will figure out which key to use.
 If you pass the `Credentials` into any function, then the library will look for
 the right keys and tokens to get the right information.
 -}
-type alias Credentials =
-    Internal.Credentials
+type Credentials
+    = Credentials
+        { cred : Internal.ICredentials
+        , context : Context
+        }
 
 
 {-| Get a Credentials type based on an unknown access token.
@@ -34,50 +38,57 @@ This is an easier way to connect to a Matrix homeserver, but your access may end
 when the access token expires, is revoked or something else happens.
 
 -}
-fromAccessToken : { homeserver : String, accessToken : String } -> Credentials
-fromAccessToken =
-    Internal.fromAccessToken
+fromAccessToken : { baseUrl : String, accessToken : String } -> Credentials
+fromAccessToken { baseUrl, accessToken } =
+    Context.fromBaseUrl baseUrl
+        |> Context.addToken accessToken
+        |> (\context ->
+                { cred = Internal.init, context = context }
+           )
+        |> Credentials
 
 
 {-| Get a Credentials type using a username and password.
 -}
-fromLoginCredentials : { username : String, password : String, homeserver : String } -> Credentials
-fromLoginCredentials =
-    Internal.fromLoginCredentials
+fromLoginCredentials : { username : String, password : String, baseUrl : String } -> Credentials
+fromLoginCredentials { username, password, baseUrl } =
+    Context.fromBaseUrl baseUrl
+        |> Context.addUsernameAndPassword
+            { username = username
+            , password = password
+            }
+        |> (\context ->
+                { cred = Internal.init, context = context }
+           )
+        |> Credentials
 
 
 {-| Get a room based on its id.
 -}
 getRoomById : String -> Credentials -> Maybe Room.Room
-getRoomById roomId credentials =
-    Internal.getRoomById roomId credentials
-        |> Maybe.map
-            (Room.init
-                { accessToken = Internal.getAccessTokenType credentials
-                , baseUrl = Internal.getBaseUrl credentials
-                , versions = Internal.getVersions credentials
-                }
-            )
+getRoomById roomId (Credentials { cred, context }) =
+    Internal.getRoomById roomId cred
+        |> Maybe.map (Room.withContext context)
 
 
 {-| Insert an internal room type into the credentials.
 -}
-insertInternalRoom : IRoom.Room -> Credentials -> Credentials
-insertInternalRoom =
-    Internal.insertRoom
+insertInternalRoom : IRoom.IRoom -> Credentials -> Credentials
+insertInternalRoom iroom (Credentials data) =
+    Credentials { data | cred = Internal.insertRoom iroom data.cred }
 
 
 {-| Internal a full room type into the credentials.
 -}
 insertRoom : Room.Room -> Credentials -> Credentials
 insertRoom =
-    Room.internalValue >> insertInternalRoom
+    Room.withoutContext >> insertInternalRoom
 
 
 {-| Update the Credentials type with new values
 -}
 updateWith : Api.CredUpdate -> Credentials -> Credentials
-updateWith credUpdate credentials =
+updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials) =
     case credUpdate of
         Api.MultipleUpdates updates ->
             List.foldl updateWith credentials updates
@@ -109,6 +120,7 @@ updateWith credUpdate credentials =
         -- TODO
         Api.SyncUpdate input output ->
             let
+                jRooms : List IRoom.IRoom
                 jRooms =
                     output.rooms
                         |> Maybe.map .join
@@ -119,68 +131,73 @@ updateWith credUpdate credentials =
                                 case getRoomById roomId credentials of
                                     -- Update existing room
                                     Just room ->
-                                        room
-                                            |> Room.internalValue
-                                            |> IRoom.addEvents
-                                                { events =
-                                                    jroom.timeline
-                                                        |> Maybe.map .events
-                                                        |> Maybe.withDefault []
-                                                        |> List.map (Event.initFromClientEventWithoutRoomId roomId)
-                                                , nextBatch = output.nextBatch
-                                                , prevBatch =
-                                                    jroom.timeline
-                                                        |> Maybe.andThen .prevBatch
-                                                        |> Maybe.withDefault (Maybe.withDefault "" input.since)
-                                                , stateDelta =
-                                                    jroom.state
-                                                        |> Maybe.map
-                                                            (.events
-                                                                >> List.map (Event.initFromClientEventWithoutRoomId roomId)
-                                                                >> StateManager.fromEventList
-                                                            )
-                                                }
+                                        case jroom.timeline of
+                                            Just timeline ->
+                                                room
+                                                    |> Room.withoutContext
+                                                    |> IRoom.addEvents
+                                                        { events =
+                                                            List.map
+                                                                (Event.initFromClientEventWithoutRoomId roomId)
+                                                                timeline.events
+                                                        , limited = timeline.limited
+                                                        , nextBatch = output.nextBatch
+                                                        , prevBatch =
+                                                            timeline.prevBatch
+                                                                |> Maybe.withDefault
+                                                                    (Maybe.withDefault "" input.since)
+                                                        , stateDelta =
+                                                            jroom.state
+                                                                |> Maybe.map
+                                                                    (.events
+                                                                        >> List.map (Event.initFromClientEventWithoutRoomId roomId)
+                                                                        >> StateManager.fromEventList
+                                                                    )
+                                                        }
+
+                                            Nothing ->
+                                                Room.withoutContext room
 
                                     -- Add new room
                                     Nothing ->
-                                        Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId } jroom
+                                        jroom
+                                        |> Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId }
                             )
             in
-            List.foldl Internal.insertRoom (Internal.addSince output.nextBatch credentials) jRooms
+            cred
+                |> Internal.addSince output.nextBatch
+                |> List.foldl Internal.insertRoom
+                |> (|>) jRooms
+                |> (\x -> { cred = x, context = context })
+                |> Credentials
 
         Api.UpdateAccessToken token ->
-            Internal.addAccessToken token credentials
+            Credentials { data | context = Context.addToken token context }
 
         Api.UpdateVersions versions ->
-            Internal.addVersions versions credentials
+            Credentials { data | context = Context.addVersions versions context }
 
 
 {-| Synchronize credentials
 -}
 sync : Credentials -> Task X.Error Api.CredUpdate
-sync credentials =
+sync (Credentials { cred, context }) =
     Api.syncCredentials
-        { accessToken = Internal.getAccessTokenType credentials
-        , baseUrl = Internal.getBaseUrl credentials
+        { accessToken = Context.accessToken context
+        , baseUrl = Context.baseUrl context
         , filter = Nothing
         , fullState = Nothing
         , setPresence = Nothing
-        , since = Internal.getSince credentials
+        , since = Internal.getSince cred
         , timeout = Just 30
-        , versions = Internal.getVersions credentials
+        , versions = Context.versions context
         }
 
 
 {-| Get a list of all synchronised rooms.
 -}
 rooms : Credentials -> List Room.Room
-rooms credentials =
-    credentials
+rooms (Credentials { cred, context }) =
+    cred
         |> Internal.getRooms
-        |> ({ accessToken = Internal.getAccessTokenType credentials
-            , baseUrl = Internal.getBaseUrl credentials
-            , versions = Internal.getVersions credentials
-            }
-                |> Room.init
-                |> List.map
-           )
+        |> List.map (Room.withContext context)
