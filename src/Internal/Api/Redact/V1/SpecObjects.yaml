@@ -1,0 +1,9 @@
+version: v1
+name: SpecObjects
+objects:
+  Redaction:
+    description: A confirmation containing the ID for the redaction event.
+    fields:
+      event_id:
+        type: string
+        required: true

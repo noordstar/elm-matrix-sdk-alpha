@@ -5,6 +5,7 @@ import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.JoinedMembers.Main as JoinedMembers
 import Internal.Api.PreApi.Main as PreApi
 import Internal.Api.PreApi.Objects.Versions as V
+import Internal.Api.Redact.Main as Redact
 import Internal.Api.SendMessageEvent.Main as SendMessageEvent
 import Internal.Api.SendStateKey.Main as SendStateKey
 import Internal.Api.Sync.Main as Sync
@@ -22,6 +23,7 @@ type CredUpdate
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
     | MessageEventSent SendMessageEvent.SendMessageEventInput SendMessageEvent.SendMessageEventOutput
+    | RedactedEvent Redact.RedactInput Redact.RedactOutput
     | StateEventSent SendStateKey.SendStateKeyInput SendStateKey.SendStateKeyOutput
     | SyncUpdate Sync.SyncInput Sync.SyncOutput
       -- Updates as a result of getting data early
@@ -105,6 +107,62 @@ joinedMembers data =
         )
         (PreApi.accessToken data.baseUrl data.accessToken)
         (PreApi.versions data.baseUrl data.versions)
+
+
+type alias RedactEventInput =
+    { accessToken : AccessToken
+    , baseUrl : String
+    , eventId : String
+    , reason : Maybe String
+    , roomId : String
+    , versions : Maybe V.Versions
+    , extraTransactionNoise : String
+    }
+
+
+{-| Redact an event from a Matrix room.
+-}
+redact : RedactEventInput -> Future CredUpdate
+redact data =
+    VG.withInfo3
+        (\accessToken versions transactionId ->
+            let
+                input : Redact.RedactInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , roomId = data.roomId
+                    , eventId = data.eventId
+                    , txnId = transactionId
+                    , reason = data.reason
+                    }
+            in
+            -- TODO: As an option, the API may get this event to see
+            -- what the event looks like now.
+            Redact.redact versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ RedactedEvent input output
+                            ]
+                    )
+        )
+        (PreApi.accessToken data.baseUrl data.accessToken)
+        (PreApi.versions data.baseUrl data.versions)
+        (PreApi.transactionId
+            (\timestamp ->
+                [ Hash.fromInt timestamp
+                , Hash.fromString data.baseUrl
+                , Hash.fromString data.eventId
+                , Hash.fromString data.roomId
+                , Hash.fromString (data.reason |> Maybe.withDefault "no-reason")
+                , Hash.fromString data.extraTransactionNoise
+                ]
+                    |> List.foldl Hash.dependent (Hash.fromInt 0)
+                    |> Hash.toString
+                    |> (++) "elm"
+            )
+        )
 
 
 type alias SendMessageEventInput =
