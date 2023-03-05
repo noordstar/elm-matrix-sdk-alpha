@@ -1,6 +1,6 @@
 # Matrix SDK for Elm
 
-This repository is a [Matrix](https://matrix.org/) SDK for [Elm](https://elm-lang.org/).
+This repository is a [Matrix](https://matrix.org/) SDK for [Elm](https://elm-lang.org/) compatible with [these spec versions](src/Internal/Api/README.md).
 
 ## How to install
 
