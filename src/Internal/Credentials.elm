@@ -161,7 +161,7 @@ updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials)
                                     -- Add new room
                                     Nothing ->
                                         jroom
-                                        |> Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId }
+                                            |> Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId }
                             )
             in
             cred

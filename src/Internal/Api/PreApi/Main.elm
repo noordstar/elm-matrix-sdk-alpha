@@ -8,11 +8,13 @@ that the credentials type needs to know about before it can make a request.
 
 -}
 
+import Internal.Api.PreApi.Objects.Login as L
 import Internal.Api.PreApi.Objects.Versions as V
 import Internal.Api.Request as R
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
 import Internal.Tools.ValueGetter exposing (ValueGetter)
+import Json.Encode as E
 import Task
 import Time
 
@@ -30,10 +32,33 @@ accessToken baseUrl t =
             UsernameAndPassword { token } ->
                 token
     , getValue =
-        "Automated login yet needs to be implemented."
-            |> X.NotSupportedYet
-            |> X.SDKException
-            |> Task.fail
+        case t of
+            UsernameAndPassword { username, password } ->
+                R.rawApiCall
+                    { headers = R.NoHeaders
+                    , method = "POST"
+                    , baseUrl = baseUrl
+                    , path = "/_matrix/client/v3/login"
+                    , pathParams = []
+                    , queryParams = []
+                    , bodyParams =
+                        [ [ ( "type", E.string "m.id.user" )
+                          , ( "user", E.string username )
+                          ]
+                            |> E.object
+                            |> R.RequiredValue "identifier"
+                        , R.RequiredString "password" password
+                        , R.RequiredString "type" "m.login.password"
+                        ]
+                    , timeout = Nothing
+                    , decoder = \_ -> L.loggedInResponseDecoder
+                    }
+                    |> Task.map .accessToken
+
+            _ ->
+                X.NoAccessToken
+                    |> X.SDKException
+                    |> Task.fail
     }
 
 
