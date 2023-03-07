@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.SpecEnums exposing (SessionDescriptionType(..))
 import Internal.Values.Event exposing (BlindEvent, IEvent)
-import Internal.Values.StateManager exposing (StateManager)
+import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Json.Encode as E
 
@@ -50,6 +50,12 @@ addEvents ({ events } as data) (IRoom room) =
 getEventById : String -> IRoom -> Maybe IEvent
 getEventById eventId (IRoom room) =
     Hashdict.get eventId room.events
+
+getStateEvent : { eventType : String, stateKey : String } -> IRoom -> Maybe IEvent
+getStateEvent data (IRoom room) =
+    room.timeline
+    |> Timeline.mostRecentState
+    |> StateManager.getStateEvent data
 
 
 {-| Get the room's id.

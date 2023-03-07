@@ -36,9 +36,29 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 | r0.0.1 || ❌ | ✔️ |
 | r0.0.0 || ❌ | ✔️ |
 
+## Changing room member status
+
+| **Spec version** |   | Inviting | Joining room id |
+| ---------------- | - | -------- | --------------- |
+| v1.6   || ⚠️ | ⚠️ |
+| v1.5   || ✔️ | ⚠️ |
+| v1.4   || ✔️ | ⚠️ |
+| v1.3   || ✔️ | ⚠️ |
+| v1.2   || ✔️ | ⚠️ |
+| v1.1   || ✔️ | ⚠️ |
+| r0.6.1 || ✔️ | ⚠️ |
+| r0.6.0 || ✔️ | ⚠️ |
+| r0.5.0 || ✔️ | ⚠️ |
+| r0.4.0 || ✔️ | ⚠️ |
+| r0.3.0 || ✔️ | ⚠️ |
+| r0.2.0 || ✔️ | ⚠️ |
+| r0.1.0 || ✔️ | ⚠️ |
+| r0.0.1 || ✔️ | ⚠️ |
+| r0.0.0 || ✔️ | ⚠️ |
+
 ## Getting events for a room
 
-| **Spec version** | | Event | Joined members | Members | Curren state | State event | Event at timestamp |
+| **Spec version** | | Event | Joined members | Members | Current state | State event | Event at timestamp |
 | ---------------- | - | ----- | -------------- | ------- | ------------ | ----------- | ------------------ |
 | v1.6   || ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
 | v1.5   || ✔️ | ✔️ | ⚡ | ⚡ | ⚡ | ⛔ |

@@ -18,8 +18,8 @@ addEvent event oldManager =
             oldManager
 
 
-getStateEvent : String -> String -> StateManager -> Maybe IEvent
-getStateEvent eventType stateKey =
+getStateEvent : { eventType : String, stateKey : String } -> StateManager -> Maybe IEvent
+getStateEvent { eventType, stateKey } =
     Dict.get ( eventType, stateKey )
 
 

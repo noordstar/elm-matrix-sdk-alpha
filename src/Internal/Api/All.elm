@@ -2,6 +2,7 @@ module Internal.Api.All exposing (..)
 
 import Hash
 import Internal.Api.GetEvent.Main as GetEvent
+import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinedMembers.Main as JoinedMembers
 import Internal.Api.PreApi.Main as PreApi
 import Internal.Api.PreApi.Objects.Versions as V
@@ -21,6 +22,7 @@ type CredUpdate
     = MultipleUpdates (List CredUpdate)
       -- Updates as a result of API calls
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
+    | InviteSent Invite.InviteInput Invite.InviteOutput
     | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
     | MessageEventSent SendMessageEvent.SendMessageEventInput SendMessageEvent.SendMessageEventOutput
     | RedactedEvent Redact.RedactInput Redact.RedactOutput
@@ -64,6 +66,44 @@ getEvent data =
                     (\output ->
                         MultipleUpdates
                             [ GetEvent input output
+                            , UpdateAccessToken accessToken
+                            , UpdateVersions versions
+                            ]
+                    )
+        )
+        (PreApi.accessToken data.baseUrl data.accessToken)
+        (PreApi.versions data.baseUrl data.versions)
+
+type alias InviteInput =
+    { accessToken : AccessToken
+    , baseUrl : String
+    , reason : Maybe String
+    , roomId : String
+    , userId : String
+    , versions : Maybe V.Versions
+    }
+
+{-| Send an invite to join a room.
+-}
+invite : InviteInput -> Future CredUpdate
+invite data =
+    VG.withInfo2
+        (\accessToken versions ->
+            let
+                input : Invite.InviteInput
+                input =
+                    { accessToken = accessToken
+                    , baseUrl = data.baseUrl
+                    , reason = data.reason
+                    , roomId = data.roomId
+                    , userId = data.userId
+                    }
+            in
+            Invite.invite versions.versions input
+                |> Task.map
+                    (\output ->
+                        MultipleUpdates
+                            [ InviteSent input output
                             , UpdateAccessToken accessToken
                             , UpdateVersions versions
                             ]

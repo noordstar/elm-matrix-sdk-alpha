@@ -106,11 +106,19 @@ updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials)
                 Nothing ->
                     credentials
 
+        -- TODO
+        Api.InviteSent _ _ ->
+            credentials
+
         Api.JoinedMembersToRoom _ _ ->
             credentials
 
         -- TODO
         Api.MessageEventSent _ _ ->
+            credentials
+        
+        -- TODO
+        Api.RedactedEvent _ _ ->
             credentials
 
         -- TODO
