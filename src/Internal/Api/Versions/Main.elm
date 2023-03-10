@@ -1,7 +1,7 @@
 module Internal.Api.Versions.Main exposing (..)
 
 import Internal.Api.Versions.Api as Api
-import Internal.Api.Versions.Objects as O
+import Internal.Api.Versions.V1.Versions as SO
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
 
@@ -11,7 +11,7 @@ type alias VersionsInput =
 
 
 type alias VersionsOutput =
-    O.Versions
+    SO.Versions
 
 
 getVersions : VersionsInput -> Task X.Error VersionsOutput

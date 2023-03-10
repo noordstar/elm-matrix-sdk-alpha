@@ -8,7 +8,7 @@ the `Credentials` type passes information down in the form of a `Context` type.
 
 -}
 
-import Internal.Api.PreApi.Objects.Versions as V
+import Internal.Api.Versions.V1.Versions as V
 import Internal.Tools.LoginValues as Login exposing (AccessToken(..))
 
 
