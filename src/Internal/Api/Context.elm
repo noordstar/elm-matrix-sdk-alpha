@@ -13,14 +13,19 @@ Additionaly, there are remove functions which are intended to tell the compiler
 -}
 
 import Internal.Config.Leaking as L
+import Internal.Tools.LoginValues exposing (AccessToken(..))
 
 type Context a =
     Context
         { accessToken : String
         , baseUrl : String
         , transactionId : String
+        , usernameAndPassword : Maybe UsernameAndPassword
         , versions : List String
         }
+
+type alias UsernameAndPassword =
+    { username : String, password : String }
 
 type alias VB a = { a | versions : (), baseUrl : () }
 
@@ -35,6 +40,7 @@ init =
         { accessToken = L.accessToken
         , baseUrl = L.baseUrl
         , transactionId = L.transactionId
+        , usernameAndPassword = Nothing
         , versions = L.versions
         }
 
@@ -53,15 +59,20 @@ getTransactionId : Context { a | transactionId : () } -> String
 getTransactionId (Context { transactionId }) =
     transactionId
 
+{-| Get the username and password of the user, if present. -}
+getUsernameAndPassword : Context { a | accessToken : () } -> Maybe UsernameAndPassword
+getUsernameAndPassword (Context { usernameAndPassword }) =
+    usernameAndPassword
+
 {-| Get the supported spec versions from the Context. -}
 getVersions : Context { a | versions : () } -> List String
 getVersions (Context { versions }) =
     versions
 
 {-| Insert an access token into the context. -}
-setAccessToken : String -> Context a -> Context { a | accessToken : () }
-setAccessToken accessToken (Context data) =
-    Context { data | accessToken = accessToken }
+setAccessToken : { accessToken : String, usernameAndPassword : Maybe UsernameAndPassword } -> Context a -> Context { a | accessToken : () }
+setAccessToken { accessToken, usernameAndPassword } (Context data) =
+    Context { data | accessToken = accessToken, usernameAndPassword = usernameAndPassword }
 
 {-| Insert a base url into the context. -}
 setBaseUrl : String -> Context a -> Context { a | baseUrl : () }

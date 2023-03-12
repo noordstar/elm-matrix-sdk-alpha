@@ -8,7 +8,8 @@ This file combines the internal functions with the API endpoints to create a ful
 -}
 
 import Dict
-import Internal.Api.All as Api
+import Internal.Api.Task as Api
+import Internal.Api.CredUpdate exposing (CredUpdate(..))
 import Internal.Context as Context exposing (Context)
 import Internal.Event as Event
 import Internal.Room as Room
@@ -87,13 +88,13 @@ insertRoom =
 
 {-| Update the Credentials type with new values
 -}
-updateWith : Api.CredUpdate -> Credentials -> Credentials
+updateWith : CredUpdate -> Credentials -> Credentials
 updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials) =
     case credUpdate of
-        Api.MultipleUpdates updates ->
+        MultipleUpdates updates ->
             List.foldl updateWith credentials updates
 
-        Api.GetEvent input output ->
+        GetEvent input output ->
             case getRoomById input.roomId credentials of
                 Just room ->
                     output
@@ -107,26 +108,26 @@ updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials)
                     credentials
 
         -- TODO
-        Api.InviteSent _ _ ->
+        InviteSent _ _ ->
             credentials
 
-        Api.JoinedMembersToRoom _ _ ->
+        JoinedMembersToRoom _ _ ->
             credentials
 
         -- TODO
-        Api.MessageEventSent _ _ ->
+        MessageEventSent _ _ ->
             credentials
         
         -- TODO
-        Api.RedactedEvent _ _ ->
+        RedactedEvent _ _ ->
             credentials
 
         -- TODO
-        Api.StateEventSent _ _ ->
+        StateEventSent _ _ ->
             credentials
 
         -- TODO
-        Api.SyncUpdate input output ->
+        SyncUpdate input output ->
             let
                 jRooms : List IRoom.IRoom
                 jRooms =
@@ -179,18 +180,22 @@ updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials)
                 |> (\x -> { cred = x, context = context })
                 |> Credentials
 
-        Api.UpdateAccessToken token ->
+        UpdateAccessToken token ->
             Credentials { data | context = Context.addToken token context }
 
-        Api.UpdateVersions versions ->
+        UpdateVersions versions ->
             Credentials { data | context = Context.addVersions versions context }
+
+        -- TODO: Save all info
+        LoggedInWithUsernameAndPassword _ output ->
+            Credentials { data | context = Context.addToken output.accessToken context }
 
 
 {-| Synchronize credentials
 -}
-sync : Credentials -> Task X.Error Api.CredUpdate
+sync : Credentials -> Task X.Error CredUpdate
 sync (Credentials { cred, context }) =
-    Api.syncCredentials
+    Api.sync
         { accessToken = Context.accessToken context
         , baseUrl = Context.baseUrl context
         , filter = Nothing

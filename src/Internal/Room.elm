@@ -4,7 +4,8 @@ module Internal.Room exposing (..)
 -}
 
 import Dict
-import Internal.Api.All as Api
+import Internal.Api.CredUpdate exposing (CredUpdate)
+import Internal.Api.Task as Api
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Context as Context exposing (Context)
 import Internal.Event as Event exposing (Event)
@@ -135,7 +136,7 @@ roomId =
 
 {-| Sends a new event to the Matrix room associated with the given `Room`.
 -}
-sendEvent : Room -> { eventType : String, content : E.Value } -> Task X.Error Api.CredUpdate
+sendEvent : Room -> { eventType : String, content : E.Value } -> Task X.Error CredUpdate
 sendEvent (Room { context, room }) { eventType, content } =
     Api.sendMessageEvent
         { accessToken = Context.accessToken context
@@ -150,7 +151,7 @@ sendEvent (Room { context, room }) { eventType, content } =
 
 {-| Sends a new text message to the Matrix room associated with the given `Room`.
 -}
-sendMessage : Room -> String -> Task X.Error Api.CredUpdate
+sendMessage : Room -> String -> Task X.Error CredUpdate
 sendMessage (Room { context, room }) text =
     Api.sendMessageEvent
         { accessToken = Context.accessToken context

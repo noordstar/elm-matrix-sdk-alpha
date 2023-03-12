@@ -1,4 +1,4 @@
-module Internal.Api.PreApi.Objects.Login exposing
+module Internal.Api.LoginWithUsernameAndPassword.V1.Login exposing
     ( DiscoveryInformation
     , HomeserverInformation
     , IdentityServerInformation

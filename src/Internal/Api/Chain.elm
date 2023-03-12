@@ -63,13 +63,14 @@ andThen f2 f1 =
             )
     )
 
-{-| Optionally run a task that may render events. 
+{-| Optionally run a task that may provide additional information. 
 
-It will always succeed, and hence will not break the chain of events.
+If the provided chain fails, it will be ignored. This way, the chain can be tasked
+without needlessly breaking the whole chain if anything breaks in here.
 
-This function does not work if it aims to deliver crucial context.
+You cannot use this function to execute a task chain that adds or removes context.
 -}
-maybe : TaskChain u a a -> TaskChain u a a
+maybe : IdemChain u a -> IdemChain u a
 maybe f =
         { contextChange = identity
         , messages = []

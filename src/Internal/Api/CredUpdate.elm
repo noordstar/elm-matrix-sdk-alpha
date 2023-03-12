@@ -1,4 +1,4 @@
-module Internal.Api.All exposing (..)
+module Internal.Api.CredUpdate exposing (..)
 
 import Hash
 import Internal.Api.Chain as Chain exposing (TaskChain, IdemChain)
@@ -6,6 +6,7 @@ import Internal.Api.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinedMembers.Main as JoinedMembers
+import Internal.Api.LoginWithUsernameAndPassword.Main as LoginWithUsernameAndPassword
 import Internal.Api.Versions.V1.Versions as V
 import Internal.Api.Redact.Main as Redact
 import Internal.Api.SendMessageEvent.Main as SendMessageEvent
@@ -13,11 +14,12 @@ import Internal.Api.SendStateKey.Main as SendStateKey
 import Internal.Api.Sync.Main as Sync
 import Internal.Api.Versions.Main as Versions
 import Internal.Tools.Exceptions as X
-import Internal.Tools.LoginValues exposing (AccessToken)
+import Internal.Tools.LoginValues exposing (AccessToken(..))
 import Internal.Tools.SpecEnums as Enums
 import Json.Encode as E
 import Task exposing (Task)
 import Time
+import Html exposing (input)
 
 
 type CredUpdate
@@ -26,6 +28,7 @@ type CredUpdate
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | InviteSent Invite.InviteInput Invite.InviteOutput
     | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
+    | LoggedInWithUsernameAndPassword LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordInput LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordOutput
     | MessageEventSent SendMessageEvent.SendMessageEventInput SendMessageEvent.SendMessageEventOutput
     | RedactedEvent Redact.RedactInput Redact.RedactOutput
     | StateEventSent SendStateKey.SendStateKeyInput SendStateKey.SendStateKeyOutput
@@ -51,6 +54,34 @@ toTask =
                     MultipleUpdates updates
         )
 
+{-| Get a functional access token.
+-}
+accessToken : AccessToken -> TaskChain CredUpdate (VB a) (VBA a)
+accessToken ctoken =
+    case ctoken of
+        NoAccess ->
+            X.NoAccessToken
+            |> X.SDKException
+            |> Task.fail
+            |> always
+
+        AccessToken t ->
+            { contextChange = Context.setAccessToken { accessToken = t, usernameAndPassword = Nothing }
+            , messages = []
+            }
+            |> Chain.TaskChainPiece
+            |> Task.succeed
+            |> always
+        
+        UsernameAndPassword { username, password, token } ->
+            case token of
+                Just t ->
+                    accessToken (AccessToken t)
+                
+                Nothing ->
+                    loginWithUsernameAndPassword
+                        { username = username, password = password }
+
 type alias GetEventInput =
     { eventId : String, roomId : String }
 
@@ -74,16 +105,21 @@ getEvent { eventId, roomId } context =
                 }
         )
 
-{-| Insert versions, or get them if they are not provided.
+{-| Get the supported spec versions from the homeserver.
 -}
-getVersions : Maybe V.Versions -> TaskChain CredUpdate { a | baseUrl : () } (VB a)
-getVersions mVersions =
-    case mVersions of
-        Just vs ->
-            withVersions vs
-        
-        Nothing ->
-            versions
+getVersions : TaskChain CredUpdate { a | baseUrl : () } (VB a)
+getVersions context =
+    let
+        input = Context.getBaseUrl context
+    in
+        Versions.getVersions input
+        |> Task.map
+            (\output ->
+                Chain.TaskChainPiece
+                    { contextChange = Context.setVersions output.versions
+                    , messages = [ UpdateVersions output ]
+                    }
+            )
 
 type alias InviteInput =
     { reason : Maybe String
@@ -130,6 +166,33 @@ joinedMembers { roomId } context =
                 Chain.TaskChainPiece
                     { contextChange = identity
                     , messages = [ JoinedMembersToRoom input output ]
+                    }
+            )
+
+type alias LoginWithUsernameAndPasswordInput =
+    { password : String
+    , username : String
+    }
+
+loginWithUsernameAndPassword : LoginWithUsernameAndPasswordInput -> TaskChain CredUpdate (VB a) (VBA a)
+loginWithUsernameAndPassword ({ username, password } as data) context =
+    let
+        input = { baseUrl = Context.getBaseUrl context
+                , username = username
+                , password = password
+                }
+    in
+        input
+        |> LoginWithUsernameAndPassword.loginWithUsernameAndPassword (Context.getVersions context)
+        |> Task.map
+            (\output ->
+                Chain.TaskChainPiece
+                    { contextChange = 
+                        Context.setAccessToken
+                            { accessToken = output.accessToken
+                            , usernameAndPassword = Just data
+                            }
+                    , messages = [ LoggedInWithUsernameAndPassword input output ]
                     }
             )
 
@@ -253,32 +316,16 @@ sync data context =
                     }
             )
 
-{-| Get the supported spec versions from the homeserver.
+{-| Insert versions, or get them if they are not provided.
 -}
-versions : TaskChain CredUpdate { a | baseUrl : () } (VB a)
-versions context =
-    let
-        input = Context.getBaseUrl context
-    in
-        Versions.getVersions input
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = Context.setVersions output.versions
-                    , messages = [ UpdateVersions output ]
-                    }
-            )
-
-{-| Create a task that inserts an access token into the context.
--}
-withAccessToken : String -> TaskChain CredUpdate a { a | accessToken : () }
-withAccessToken accessToken =
-    { contextChange = Context.setAccessToken accessToken
-    , messages = []
-    }
-    |> Chain.TaskChainPiece
-    |> Task.succeed
-    |> always
+versions : Maybe V.Versions -> TaskChain CredUpdate { a | baseUrl : () } (VB a)
+versions mVersions =
+    case mVersions of
+        Just vs ->
+            withVersions vs
+        
+        Nothing ->
+            getVersions
 
 {-| Create a task that insert the base URL into the context. 
 -}
@@ -311,9 +358,9 @@ withTransactionId toString =
 
 {-| Create a task that inserts versions into the context.
 -}
-withVersions : V.Versions -> TaskChain CredUpdate a { a | versions : () }
-withVersions versions =
-    { contextChange = Context.setVersions versions.versions
+withVersions : V.Versions -> TaskChain CredUpdate { a | baseUrl : () } (VB a)
+withVersions vs =
+    { contextChange = Context.setVersions vs.versions
     , messages = []
     }
     |> Chain.TaskChainPiece
