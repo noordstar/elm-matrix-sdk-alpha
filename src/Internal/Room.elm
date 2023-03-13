@@ -7,7 +7,7 @@ import Dict
 import Internal.Api.CredUpdate exposing (CredUpdate)
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Api.Task as Api
-import Internal.Context as Context exposing (Context)
+import Internal.Credentials as Credentials exposing (Credentials)
 import Internal.Event as Event exposing (Event)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.Hashdict as Hashdict
@@ -30,7 +30,7 @@ to it.
 type Room
     = Room
         { room : Internal.IRoom
-        , context : Context
+        , context : Credentials
         }
 
 
@@ -98,13 +98,13 @@ addInternalEvent ievent (Room ({ room } as data)) =
 -}
 addEvent : Event -> Room -> Room
 addEvent =
-    Event.withoutContext >> addInternalEvent
+    Event.withoutCredentials >> addInternalEvent
 
 
 {-| Creates a new `Room` object with the given parameters.
 -}
-withContext : Context -> Internal.IRoom -> Room
-withContext context room =
+withCredentials : Credentials -> Internal.IRoom -> Room
+withCredentials context room =
     Room
         { context = context
         , room = room
@@ -113,8 +113,8 @@ withContext context room =
 
 {-| Retrieves the `Internal.IRoom` type contained within the given `Room`.
 -}
-withoutContext : Room -> Internal.IRoom
-withoutContext (Room { room }) =
+withoutCredentials : Room -> Internal.IRoom
+withoutCredentials (Room { room }) =
     room
 
 
@@ -124,14 +124,14 @@ mostRecentEvents : Room -> List Event
 mostRecentEvents (Room { context, room }) =
     room
         |> Internal.mostRecentEvents
-        |> List.map (Event.withContext context)
+        |> List.map (Event.withCredentials context)
 
 
 {-| Retrieves the ID of the Matrix room associated with the given `Room`.
 -}
 roomId : Room -> String
 roomId =
-    withoutContext >> Internal.roomId
+    withoutCredentials >> Internal.roomId
 
 
 {-| Sends a new event to the Matrix room associated with the given `Room`.
@@ -139,12 +139,12 @@ roomId =
 sendEvent : Room -> { eventType : String, content : E.Value } -> Task X.Error CredUpdate
 sendEvent (Room { context, room }) { eventType, content } =
     Api.sendMessageEvent
-        { accessToken = Context.accessToken context
-        , baseUrl = Context.baseUrl context
+        { accessToken = Credentials.accessToken context
+        , baseUrl = Credentials.baseUrl context
         , content = content
         , eventType = eventType
         , roomId = Internal.roomId room
-        , versions = Context.versions context
+        , versions = Credentials.versions context
         , extraTransactionNoise = "content-value:<object>"
         }
 
@@ -154,8 +154,8 @@ sendEvent (Room { context, room }) { eventType, content } =
 sendMessage : Room -> String -> Task X.Error CredUpdate
 sendMessage (Room { context, room }) text =
     Api.sendMessageEvent
-        { accessToken = Context.accessToken context
-        , baseUrl = Context.baseUrl context
+        { accessToken = Credentials.accessToken context
+        , baseUrl = Credentials.baseUrl context
         , content =
             E.object
                 [ ( "msgtype", E.string "m.text" )
@@ -163,6 +163,6 @@ sendMessage (Room { context, room }) text =
                 ]
         , eventType = "m.room.message"
         , roomId = Internal.roomId room
-        , versions = Context.versions context
+        , versions = Credentials.versions context
         , extraTransactionNoise = "literal-message:" ++ text
         }

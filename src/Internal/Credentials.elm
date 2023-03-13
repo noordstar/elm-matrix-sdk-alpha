@@ -1,216 +1,73 @@
 module Internal.Credentials exposing (..)
 
-{-| The Credentials type is the keychain that stores all tokens, values,
-numbers and other types that need to be remembered.
+{-| The `Credentials` type serves as an extra layer between the internal Room/Event types
+and the types that the user may deal with directly.
 
-This file combines the internal functions with the API endpoints to create a fully functional Credentials keychain.
+Since pointers cannot point to values that the `Vault` type has,
+the `Vault` type passes information down in the form of a `Credentials` type.
 
 -}
 
-import Dict
-import Internal.Api.Task as Api
-import Internal.Api.CredUpdate exposing (CredUpdate(..))
-import Internal.Context as Context exposing (Context)
-import Internal.Event as Event
-import Internal.Room as Room
-import Internal.Tools.Exceptions as X
-import Internal.Values.Credentials as Internal
-import Internal.Values.Event as IEvent
-import Internal.Values.Room as IRoom
-import Internal.Values.StateManager as StateManager
-import Task exposing (Task)
+import Internal.Api.Versions.V1.Versions as V
+import Internal.Tools.LoginValues as Login exposing (AccessToken(..))
 
 
-{-| You can consider the `Credentials` type as a large ring of keys,
-and Elm will figure out which key to use.
-If you pass the `Credentials` into any function, then the library will look for
-the right keys and tokens to get the right information.
--}
 type Credentials
     = Credentials
-        { cred : Internal.ICredentials
-        , context : Context
+        { access : AccessToken
+        , homeserver : String
+        , vs : Maybe V.Versions
         }
 
 
-{-| Get a Credentials type based on an unknown access token.
-
-This is an easier way to connect to a Matrix homeserver, but your access may end
-when the access token expires, is revoked or something else happens.
-
+{-| Retrieves the access token from a given `Credentials` value.
 -}
-fromAccessToken : { baseUrl : String, accessToken : String } -> Credentials
-fromAccessToken { baseUrl, accessToken } =
-    Context.fromBaseUrl baseUrl
-        |> Context.addToken accessToken
-        |> (\context ->
-                { cred = Internal.init, context = context }
-           )
-        |> Credentials
+accessToken : Credentials -> AccessToken
+accessToken (Credentials { access }) =
+    access
 
 
-{-| Get a Credentials type using a username and password.
+{-| Add a new access token to the `Credentials` type.
 -}
-fromLoginCredentials : { username : String, password : String, baseUrl : String } -> Credentials
-fromLoginCredentials { username, password, baseUrl } =
-    Context.fromBaseUrl baseUrl
-        |> Context.addUsernameAndPassword
-            { username = username
-            , password = password
-            }
-        |> (\context ->
-                { cred = Internal.init, context = context }
-           )
-        |> Credentials
+addToken : String -> Credentials -> Credentials
+addToken token (Credentials ({ access } as data)) =
+    Credentials { data | access = Login.addToken token access }
 
 
-{-| Get a room based on its id.
+{-| Add a username and password to the `Credentials` type.
 -}
-getRoomById : String -> Credentials -> Maybe Room.Room
-getRoomById roomId (Credentials { cred, context }) =
-    Internal.getRoomById roomId cred
-        |> Maybe.map (Room.withContext context)
+addUsernameAndPassword : { username : String, password : String } -> Credentials -> Credentials
+addUsernameAndPassword uap (Credentials ({ access } as data)) =
+    Credentials { data | access = Login.addUsernameAndPassword uap access }
 
 
-{-| Insert an internal room type into the credentials.
+{-| Add known spec versions to the `Credentials` type.
 -}
-insertInternalRoom : IRoom.IRoom -> Credentials -> Credentials
-insertInternalRoom iroom (Credentials data) =
-    Credentials { data | cred = Internal.insertRoom iroom data.cred }
+addVersions : V.Versions -> Credentials -> Credentials
+addVersions vs (Credentials data) =
+    Credentials { data | vs = Just vs }
 
 
-{-| Internal a full room type into the credentials.
+{-| Retrieves the base url from a given `Credentials` value.
 -}
-insertRoom : Room.Room -> Credentials -> Credentials
-insertRoom =
-    Room.withoutContext >> insertInternalRoom
+baseUrl : Credentials -> String
+baseUrl (Credentials { homeserver }) =
+    homeserver
 
 
-{-| Update the Credentials type with new values
+{-| Creates a `Credentials` value from a base URL.
 -}
-updateWith : CredUpdate -> Credentials -> Credentials
-updateWith credUpdate ((Credentials ({ cred, context } as data)) as credentials) =
-    case credUpdate of
-        MultipleUpdates updates ->
-            List.foldl updateWith credentials updates
-
-        GetEvent input output ->
-            case getRoomById input.roomId credentials of
-                Just room ->
-                    output
-                        |> Event.initFromGetEvent
-                        |> Room.addInternalEvent
-                        |> (|>) room
-                        |> insertRoom
-                        |> (|>) credentials
-
-                Nothing ->
-                    credentials
-
-        -- TODO
-        InviteSent _ _ ->
-            credentials
-
-        JoinedMembersToRoom _ _ ->
-            credentials
-
-        -- TODO
-        MessageEventSent _ _ ->
-            credentials
-        
-        -- TODO
-        RedactedEvent _ _ ->
-            credentials
-
-        -- TODO
-        StateEventSent _ _ ->
-            credentials
-
-        -- TODO
-        SyncUpdate input output ->
-            let
-                jRooms : List IRoom.IRoom
-                jRooms =
-                    output.rooms
-                        |> Maybe.map .join
-                        |> Maybe.withDefault Dict.empty
-                        |> Dict.toList
-                        |> List.map
-                            (\( roomId, jroom ) ->
-                                case getRoomById roomId credentials of
-                                    -- Update existing room
-                                    Just room ->
-                                        case jroom.timeline of
-                                            Just timeline ->
-                                                room
-                                                    |> Room.withoutContext
-                                                    |> IRoom.addEvents
-                                                        { events =
-                                                            List.map
-                                                                (Event.initFromClientEventWithoutRoomId roomId)
-                                                                timeline.events
-                                                        , limited = timeline.limited
-                                                        , nextBatch = output.nextBatch
-                                                        , prevBatch =
-                                                            timeline.prevBatch
-                                                                |> Maybe.withDefault
-                                                                    (Maybe.withDefault "" input.since)
-                                                        , stateDelta =
-                                                            jroom.state
-                                                                |> Maybe.map
-                                                                    (.events
-                                                                        >> List.map (Event.initFromClientEventWithoutRoomId roomId)
-                                                                        >> StateManager.fromEventList
-                                                                    )
-                                                        }
-
-                                            Nothing ->
-                                                Room.withoutContext room
-
-                                    -- Add new room
-                                    Nothing ->
-                                        jroom
-                                            |> Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId }
-                            )
-            in
-            cred
-                |> Internal.addSince output.nextBatch
-                |> List.foldl Internal.insertRoom
-                |> (|>) jRooms
-                |> (\x -> { cred = x, context = context })
-                |> Credentials
-
-        UpdateAccessToken token ->
-            Credentials { data | context = Context.addToken token context }
-
-        UpdateVersions versions ->
-            Credentials { data | context = Context.addVersions versions context }
-
-        -- TODO: Save all info
-        LoggedInWithUsernameAndPassword _ output ->
-            Credentials { data | context = Context.addToken output.accessToken context }
-
-
-{-| Synchronize credentials
--}
-sync : Credentials -> Task X.Error CredUpdate
-sync (Credentials { cred, context }) =
-    Api.sync
-        { accessToken = Context.accessToken context
-        , baseUrl = Context.baseUrl context
-        , filter = Nothing
-        , fullState = Nothing
-        , setPresence = Nothing
-        , since = Internal.getSince cred
-        , timeout = Just 30
-        , versions = Context.versions context
+fromBaseUrl : String -> Credentials
+fromBaseUrl url =
+    Credentials
+        { access = NoAccess
+        , homeserver = url
+        , vs = Nothing
         }
 
 
-{-| Get a list of all synchronised rooms.
+{-| Retrieves the spec versions from a given `Credentials` value.
 -}
-rooms : Credentials -> List Room.Room
-rooms (Credentials { cred, context }) =
-    cred
-        |> Internal.getRooms
-        |> List.map (Room.withContext context)
+versions : Credentials -> Maybe V.Versions
+versions (Credentials { vs }) =
+    vs

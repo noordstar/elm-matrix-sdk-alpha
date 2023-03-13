@@ -10,7 +10,7 @@ resend other events or forward them elsewhere.
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
 import Internal.Api.Sync.V2.SpecObjects as SyncSO
-import Internal.Context exposing (Context)
+import Internal.Credentials exposing (Credentials)
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
 import Json.Encode as E
@@ -21,15 +21,15 @@ import Json.Encode as E
 type Event
     = Event
         { event : Internal.IEvent
-        , context : Context
+        , context : Credentials
         }
 
 
 {-| Using the credentials' background information and an internal event type,
 create an interactive event type.
 -}
-withContext : Context -> Internal.IEvent -> Event
-withContext context event =
+withCredentials : Credentials -> Internal.IEvent -> Event
+withCredentials context event =
     Event
         { event = event
         , context = context
@@ -90,8 +90,8 @@ initFromClientEventWithoutRoomId rId output =
 
 {-| Get the internal event type that is hidden in the interactive event type.
 -}
-withoutContext : Event -> Internal.IEvent
-withoutContext (Event { event }) =
+withoutCredentials : Event -> Internal.IEvent
+withoutCredentials (Event { event }) =
     event
 
 
@@ -101,42 +101,42 @@ withoutContext (Event { event }) =
 
 content : Event -> E.Value
 content =
-    withoutContext >> Internal.content
+    withoutCredentials >> Internal.content
 
 
 eventId : Event -> String
 eventId =
-    withoutContext >> Internal.eventId
+    withoutCredentials >> Internal.eventId
 
 
 originServerTs : Event -> Timestamp
 originServerTs =
-    withoutContext >> Internal.originServerTs
+    withoutCredentials >> Internal.originServerTs
 
 
 roomId : Event -> String
 roomId =
-    withoutContext >> Internal.roomId
+    withoutCredentials >> Internal.roomId
 
 
 sender : Event -> String
 sender =
-    withoutContext >> Internal.sender
+    withoutCredentials >> Internal.sender
 
 
 stateKey : Event -> Maybe String
 stateKey =
-    withoutContext >> Internal.stateKey
+    withoutCredentials >> Internal.stateKey
 
 
 contentType : Event -> String
 contentType =
-    withoutContext >> Internal.contentType
+    withoutCredentials >> Internal.contentType
 
 
 age : Event -> Maybe Int
 age =
-    withoutContext >> Internal.age
+    withoutCredentials >> Internal.age
 
 
 redactedBecause : Event -> Maybe Event
@@ -151,4 +151,4 @@ redactedBecause (Event data) =
 
 transactionId : Event -> Maybe String
 transactionId =
-    withoutContext >> Internal.transactionId
+    withoutCredentials >> Internal.transactionId

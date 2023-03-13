@@ -1,7 +1,5 @@
 module Internal.Api.CredUpdate exposing (..)
 
-import Hash
-import Html exposing (input)
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
 import Internal.Api.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Api.GetEvent.Main as GetEvent
