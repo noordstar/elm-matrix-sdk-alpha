@@ -5,9 +5,9 @@ module Internal.Room exposing (..)
 
 import Dict
 import Internal.Api.CredUpdate exposing (CredUpdate)
+import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Api.Task as Api
-import Internal.Credentials as Credentials exposing (Credentials)
 import Internal.Event as Event exposing (Event)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.Hashdict as Hashdict

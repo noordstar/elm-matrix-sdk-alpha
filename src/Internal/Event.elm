@@ -7,10 +7,10 @@ resend other events or forward them elsewhere.
 
 -}
 
+import Internal.Api.Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
 import Internal.Api.Sync.V2.SpecObjects as SyncSO
-import Internal.Credentials exposing (Credentials)
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
 import Json.Encode as E

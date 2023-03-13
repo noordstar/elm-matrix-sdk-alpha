@@ -1,11 +1,8 @@
-module Internal.Credentials exposing (..)
+module Internal.Api.Credentials exposing (..)
 
-{-| The `Credentials` type serves as an extra layer between the internal Room/Event types
-and the types that the user may deal with directly.
-
-Since pointers cannot point to values that the `Vault` type has,
-the `Vault` type passes information down in the form of a `Credentials` type.
-
+{-| The `Credentials` type stitches the Vault together to the Matrix API.
+It stores tokens and values needed to interact with the API, and it provides
+the necessary context when the user aims to talk to the Matrix API.
 -}
 
 import Internal.Api.Versions.V1.Versions as V

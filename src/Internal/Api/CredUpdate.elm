@@ -1,7 +1,7 @@
 module Internal.Api.CredUpdate exposing (..)
 
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
-import Internal.Tools.Context as Context exposing (VB, VBA, VBAT)
+import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinedMembers.Main as JoinedMembers
@@ -12,6 +12,7 @@ import Internal.Api.SendStateKey.Main as SendStateKey
 import Internal.Api.Sync.Main as Sync
 import Internal.Api.Versions.Main as Versions
 import Internal.Api.Versions.V1.Versions as V
+import Internal.Tools.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
 import Internal.Tools.SpecEnums as Enums
@@ -213,6 +214,34 @@ loginWithUsernameAndPassword ({ username, password } as data) context =
                     , messages = [ LoggedInWithUsernameAndPassword input output ]
                     }
             )
+
+
+{-| Make a VB-context based chain.
+-}
+makeVB : Credentials -> TaskChain CredUpdate {} (VB {})
+makeVB cred =
+    cred
+        |> Credentials.baseUrl
+        |> withBaseUrl
+        |> Chain.andThen (versions (Credentials.versions cred))
+
+
+{-| Make a VBA-context based chain.
+-}
+makeVBA : Credentials -> TaskChain CredUpdate {} (VBA {})
+makeVBA cred =
+    cred
+        |> makeVB
+        |> Chain.andThen (accessToken (Credentials.accessToken cred))
+
+
+{-| Make a VBAT-context based chain.
+-}
+makeVBAT : (Int -> String) -> Credentials -> TaskChain CredUpdate {} (VBAT {})
+makeVBAT toString cred =
+    cred
+        |> makeVBA
+        |> Chain.andThen (withTransactionId toString)
 
 
 type alias RedactInput =

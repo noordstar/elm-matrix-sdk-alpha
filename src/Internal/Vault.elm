@@ -9,8 +9,8 @@ This file combines the internal functions with the API endpoints to create a ful
 
 import Dict
 import Internal.Api.CredUpdate exposing (CredUpdate(..))
+import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.Task as Api
-import Internal.Context as Context exposing (Context)
 import Internal.Event as Event
 import Internal.Room as Room
 import Internal.Tools.Exceptions as X
@@ -29,7 +29,7 @@ the right keys and tokens to get the right information.
 type Vault
     = Vault
         { cred : Internal.IVault
-        , context : Context
+        , context : Credentials
         }
 
 
@@ -41,8 +41,8 @@ when the access token expires, is revoked or something else happens.
 -}
 fromAccessToken : { baseUrl : String, accessToken : String } -> Vault
 fromAccessToken { baseUrl, accessToken } =
-    Context.fromBaseUrl baseUrl
-        |> Context.addToken accessToken
+    Credentials.fromBaseUrl baseUrl
+        |> Credentials.addToken accessToken
         |> (\context ->
                 { cred = Internal.init, context = context }
            )
@@ -53,8 +53,8 @@ fromAccessToken { baseUrl, accessToken } =
 -}
 fromLoginVault : { username : String, password : String, baseUrl : String } -> Vault
 fromLoginVault { username, password, baseUrl } =
-    Context.fromBaseUrl baseUrl
-        |> Context.addUsernameAndPassword
+    Credentials.fromBaseUrl baseUrl
+        |> Credentials.addUsernameAndPassword
             { username = username
             , password = password
             }
@@ -69,7 +69,7 @@ fromLoginVault { username, password, baseUrl } =
 getRoomById : String -> Vault -> Maybe Room.Room
 getRoomById roomId (Vault { cred, context }) =
     Internal.getRoomById roomId cred
-        |> Maybe.map (Room.withContext context)
+        |> Maybe.map (Room.withCredentials context)
 
 
 {-| Insert an internal room type into the credentials.
@@ -83,7 +83,7 @@ insertInternalRoom iroom (Vault data) =
 -}
 insertRoom : Room.Room -> Vault -> Vault
 insertRoom =
-    Room.withoutContext >> insertInternalRoom
+    Room.withoutCredentials >> insertInternalRoom
 
 
 {-| Update the Vault type with new values
@@ -143,7 +143,7 @@ updateWith credUpdate ((Vault ({ cred, context } as data)) as credentials) =
                                         case jroom.timeline of
                                             Just timeline ->
                                                 room
-                                                    |> Room.withoutContext
+                                                    |> Room.withoutCredentials
                                                     |> IRoom.addEvents
                                                         { events =
                                                             List.map
@@ -165,7 +165,7 @@ updateWith credUpdate ((Vault ({ cred, context } as data)) as credentials) =
                                                         }
 
                                             Nothing ->
-                                                Room.withoutContext room
+                                                Room.withoutCredentials room
 
                                     -- Add new room
                                     Nothing ->
@@ -181,14 +181,14 @@ updateWith credUpdate ((Vault ({ cred, context } as data)) as credentials) =
                 |> Vault
 
         UpdateAccessToken token ->
-            Vault { data | context = Context.addToken token context }
+            Vault { data | context = Credentials.addToken token context }
 
         UpdateVersions versions ->
-            Vault { data | context = Context.addVersions versions context }
+            Vault { data | context = Credentials.addVersions versions context }
 
         -- TODO: Save all info
         LoggedInWithUsernameAndPassword _ output ->
-            Vault { data | context = Context.addToken output.accessToken context }
+            Vault { data | context = Credentials.addToken output.accessToken context }
 
 
 {-| Synchronize credentials
@@ -196,14 +196,14 @@ updateWith credUpdate ((Vault ({ cred, context } as data)) as credentials) =
 sync : Vault -> Task X.Error CredUpdate
 sync (Vault { cred, context }) =
     Api.sync
-        { accessToken = Context.accessToken context
-        , baseUrl = Context.baseUrl context
+        { accessToken = Credentials.accessToken context
+        , baseUrl = Credentials.baseUrl context
         , filter = Nothing
         , fullState = Nothing
         , setPresence = Nothing
         , since = Internal.getSince cred
         , timeout = Just 30
-        , versions = Context.versions context
+        , versions = Credentials.versions context
         }
 
 
@@ -213,4 +213,4 @@ rooms : Vault -> List Room.Room
 rooms (Vault { cred, context }) =
     cred
         |> Internal.getRooms
-        |> List.map (Room.withContext context)
+        |> List.map (Room.withCredentials context)
