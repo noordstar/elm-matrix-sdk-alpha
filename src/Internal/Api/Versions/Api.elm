@@ -5,6 +5,7 @@ import Internal.Api.Versions.V1.Versions as SO
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
 
+
 versionsV1 : { baseUrl : String } -> Task X.Error SO.Versions
 versionsV1 data =
     R.rawApiCall

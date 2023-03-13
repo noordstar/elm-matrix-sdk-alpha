@@ -5,12 +5,14 @@ import Internal.Tools.Exceptions as X
 import Json.Decode as D
 import Task exposing (Task)
 
+
 type alias InviteInputV1 =
     { accessToken : String
     , baseUrl : String
     , roomId : String
     , userId : String
     }
+
 
 type alias InviteInputV2 =
     { accessToken : String
@@ -20,7 +22,10 @@ type alias InviteInputV2 =
     , userId : String
     }
 
-type alias InviteOutputV1 = ()
+
+type alias InviteOutputV1 =
+    ()
+
 
 inviteV1 : InviteInputV1 -> Task X.Error InviteOutputV1
 inviteV1 data =
@@ -39,7 +44,8 @@ inviteV1 data =
         , timeout = Nothing
         , decoder = always (D.map (always ()) D.value)
         }
-        
+
+
 inviteV2 : InviteInputV2 -> Task X.Error InviteOutputV1
 inviteV2 data =
     R.rawApiCall

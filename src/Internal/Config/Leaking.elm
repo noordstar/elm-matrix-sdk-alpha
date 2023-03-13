@@ -8,14 +8,18 @@ Values like these usually imply that there is a leakage in the implementation or
 
 -}
 
-import Time
 import Hash
+import Time
+
 
 accessToken : String
-accessToken = "mistaken_access_token"
+accessToken =
+    "mistaken_access_token"
+
 
 baseUrl : String
-baseUrl = "https://matrix.example.org"
+baseUrl =
+    "https://matrix.example.org"
 
 
 eventId : String
@@ -52,9 +56,11 @@ sender : String
 sender =
     "@alice:example.org"
 
+
 transactionId : String
 transactionId =
     "elm" ++ (Hash.fromString "leaked_transactionId" |> Hash.toString)
+
 
 versions : List String
 versions =

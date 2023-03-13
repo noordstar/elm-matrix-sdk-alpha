@@ -6,11 +6,13 @@ import Internal.Tools.Exceptions as X
 import Json.Encode as E
 import Task exposing (Task)
 
+
 type alias LoginWithUsernameAndPasswordInputV1 =
     { baseUrl : String
     , password : String
     , username : String
     }
+
 
 type alias LoginWithUsernameAndPasswordOutputV1 =
     SO.LoggedInResponse
@@ -27,8 +29,8 @@ loginWithUsernameAndPasswordV1 data =
         , queryParams = []
         , bodyParams =
             [ [ ( "type", E.string "m.id.user" )
-                , ( "user", E.string data.username )
-                ]
+              , ( "user", E.string data.username )
+              ]
                 |> E.object
                 |> R.RequiredValue "identifier"
             , R.RequiredString "password" data.password
@@ -37,4 +39,3 @@ loginWithUsernameAndPasswordV1 data =
         , timeout = Nothing
         , decoder = always SO.loggedInResponseDecoder
         }
-

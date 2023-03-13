@@ -1,25 +1,25 @@
 module Internal.Api.CredUpdate exposing (..)
 
 import Hash
-import Internal.Api.Chain as Chain exposing (TaskChain, IdemChain)
+import Html exposing (input)
+import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
 import Internal.Api.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinedMembers.Main as JoinedMembers
 import Internal.Api.LoginWithUsernameAndPassword.Main as LoginWithUsernameAndPassword
-import Internal.Api.Versions.V1.Versions as V
 import Internal.Api.Redact.Main as Redact
 import Internal.Api.SendMessageEvent.Main as SendMessageEvent
 import Internal.Api.SendStateKey.Main as SendStateKey
 import Internal.Api.Sync.Main as Sync
 import Internal.Api.Versions.Main as Versions
+import Internal.Api.Versions.V1.Versions as V
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
 import Internal.Tools.SpecEnums as Enums
 import Json.Encode as E
 import Task exposing (Task)
 import Time
-import Html exposing (input)
 
 
 type CredUpdate
@@ -37,22 +37,26 @@ type CredUpdate
     | UpdateAccessToken String
     | UpdateVersions V.Versions
 
-type alias FutureTask = Task X.Error CredUpdate
+
+type alias FutureTask =
+    Task X.Error CredUpdate
+
 
 {-| Turn a chain of tasks into a full executable task.
 -}
 toTask : TaskChain CredUpdate {} b -> FutureTask
 toTask =
-    Chain.toTask 
-    >> Task.map
-        (\updates ->
-            case updates of
-                [ item ] ->
-                    item
-                
-                _ ->
-                    MultipleUpdates updates
-        )
+    Chain.toTask
+        >> Task.map
+            (\updates ->
+                case updates of
+                    [ item ] ->
+                        item
+
+                    _ ->
+                        MultipleUpdates updates
+            )
+
 
 {-| Get a functional access token.
 -}
@@ -61,58 +65,64 @@ accessToken ctoken =
     case ctoken of
         NoAccess ->
             X.NoAccessToken
-            |> X.SDKException
-            |> Task.fail
-            |> always
+                |> X.SDKException
+                |> Task.fail
+                |> always
 
         AccessToken t ->
             { contextChange = Context.setAccessToken { accessToken = t, usernameAndPassword = Nothing }
             , messages = []
             }
-            |> Chain.TaskChainPiece
-            |> Task.succeed
-            |> always
-        
+                |> Chain.TaskChainPiece
+                |> Task.succeed
+                |> always
+
         UsernameAndPassword { username, password, token } ->
             case token of
                 Just t ->
                     accessToken (AccessToken t)
-                
+
                 Nothing ->
                     loginWithUsernameAndPassword
                         { username = username, password = password }
 
+
 type alias GetEventInput =
     { eventId : String, roomId : String }
+
 
 {-| Get an event from the API.
 -}
 getEvent : GetEventInput -> IdemChain CredUpdate (VBA a)
 getEvent { eventId, roomId } context =
     let
-        input = { accessToken = Context.getAccessToken context
-                , baseUrl = Context.getBaseUrl context
-                , eventId = eventId
-                , roomId = roomId
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , eventId = eventId
+            , roomId = roomId
+            }
     in
     input
         |> GetEvent.getEvent (Context.getVersions context)
-        |> Task.map (\output ->
-            Chain.TaskChainPiece
-                { contextChange = identity
-                , messages = [ GetEvent input output ]
-                }
-        )
+        |> Task.map
+            (\output ->
+                Chain.TaskChainPiece
+                    { contextChange = identity
+                    , messages = [ GetEvent input output ]
+                    }
+            )
+
 
 {-| Get the supported spec versions from the homeserver.
 -}
 getVersions : TaskChain CredUpdate { a | baseUrl : () } (VB a)
 getVersions context =
     let
-        input = Context.getBaseUrl context
+        input =
+            Context.getBaseUrl context
     in
-        Versions.getVersions input
+    Versions.getVersions input
         |> Task.map
             (\output ->
                 Chain.TaskChainPiece
@@ -121,24 +131,28 @@ getVersions context =
                     }
             )
 
+
 type alias InviteInput =
     { reason : Maybe String
     , roomId : String
     , userId : String
     }
 
-{-| Invite a user to a room. -}
+
+{-| Invite a user to a room.
+-}
 invite : InviteInput -> IdemChain CredUpdate (VBA a)
 invite { reason, roomId, userId } context =
     let
-        input = { accessToken = Context.getAccessToken context
-                , baseUrl = Context.getBaseUrl context
-                , reason = reason
-                , roomId = roomId
-                , userId = userId
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , reason = reason
+            , roomId = roomId
+            , userId = userId
+            }
     in
-        input
+    input
         |> Invite.invite (Context.getVersions context)
         |> Task.map
             (\output ->
@@ -148,18 +162,21 @@ invite { reason, roomId, userId } context =
                     }
             )
 
+
 type alias JoinedMembersInput =
     { roomId : String }
+
 
 joinedMembers : JoinedMembersInput -> IdemChain CredUpdate (VBA a)
 joinedMembers { roomId } context =
     let
-        input = { accessToken = Context.getAccessToken context 
-                , baseUrl = Context.getBaseUrl context
-                , roomId = roomId
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , roomId = roomId
+            }
     in
-        input
+    input
         |> JoinedMembers.joinedMembers (Context.getVersions context)
         |> Task.map
             (\output ->
@@ -169,25 +186,28 @@ joinedMembers { roomId } context =
                     }
             )
 
+
 type alias LoginWithUsernameAndPasswordInput =
     { password : String
     , username : String
     }
 
+
 loginWithUsernameAndPassword : LoginWithUsernameAndPasswordInput -> TaskChain CredUpdate (VB a) (VBA a)
 loginWithUsernameAndPassword ({ username, password } as data) context =
     let
-        input = { baseUrl = Context.getBaseUrl context
-                , username = username
-                , password = password
-                }
+        input =
+            { baseUrl = Context.getBaseUrl context
+            , username = username
+            , password = password
+            }
     in
-        input
+    input
         |> LoginWithUsernameAndPassword.loginWithUsernameAndPassword (Context.getVersions context)
         |> Task.map
             (\output ->
                 Chain.TaskChainPiece
-                    { contextChange = 
+                    { contextChange =
                         Context.setAccessToken
                             { accessToken = output.accessToken
                             , usernameAndPassword = Just data
@@ -196,26 +216,29 @@ loginWithUsernameAndPassword ({ username, password } as data) context =
                     }
             )
 
+
 type alias RedactInput =
     { eventId : String
     , reason : Maybe String
     , roomId : String
     }
 
+
 {-| Redact an event from a room.
 -}
 redact : RedactInput -> TaskChain CredUpdate (VBAT a) (VBA a)
 redact { eventId, reason, roomId } context =
     let
-        input = { accessToken = Context.getAccessToken context
-                , baseUrl = Context.getBaseUrl context
-                , eventId = eventId
-                , reason = reason
-                , roomId = roomId
-                , txnId = Context.getTransactionId context
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , eventId = eventId
+            , reason = reason
+            , roomId = roomId
+            , txnId = Context.getTransactionId context
+            }
     in
-        input
+    input
         |> Redact.redact (Context.getVersions context)
         |> Task.map
             (\output ->
@@ -225,26 +248,29 @@ redact { eventId, reason, roomId } context =
                     }
             )
 
+
 type alias SendMessageEventInput =
     { content : E.Value
     , eventType : String
     , roomId : String
     }
 
+
 {-| Send a message event to a room.
 -}
 sendMessageEvent : SendMessageEventInput -> TaskChain CredUpdate (VBAT a) (VBA a)
 sendMessageEvent { content, eventType, roomId } context =
     let
-        input = { accessToken = Context.getAccessToken context
-                , baseUrl = Context.getBaseUrl context
-                , content = content
-                , eventType = eventType
-                , roomId = roomId
-                , transactionId = Context.getTransactionId context
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , content = content
+            , eventType = eventType
+            , roomId = roomId
+            , transactionId = Context.getTransactionId context
+            }
     in
-        input
+    input
         |> SendMessageEvent.sendMessageEvent (Context.getVersions context)
         |> Task.map
             (\output ->
@@ -254,6 +280,7 @@ sendMessageEvent { content, eventType, roomId } context =
                     }
             )
 
+
 type alias SendStateEventInput =
     { content : E.Value
     , eventType : String
@@ -261,20 +288,22 @@ type alias SendStateEventInput =
     , stateKey : String
     }
 
+
 {-| Send a state key event to a room.
 -}
 sendStateEvent : SendStateEventInput -> IdemChain CredUpdate (VBA a)
 sendStateEvent { content, eventType, roomId, stateKey } context =
     let
-        input = { accessToken = Context.getAccessToken context
-                , baseUrl = Context.getBaseUrl context
-                , content = content
-                , eventType = eventType
-                , roomId = roomId
-                , stateKey = stateKey
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , content = content
+            , eventType = eventType
+            , roomId = roomId
+            , stateKey = stateKey
+            }
     in
-        input
+    input
         |> SendStateKey.sendStateKey (Context.getVersions context)
         |> Task.map
             (\output ->
@@ -284,6 +313,7 @@ sendStateEvent { content, eventType, roomId, stateKey } context =
                     }
             )
 
+
 type alias SyncInput =
     { filter : Maybe String
     , fullState : Maybe Bool
@@ -292,21 +322,23 @@ type alias SyncInput =
     , timeout : Maybe Int
     }
 
+
 {-| Sync the latest updates.
 -}
 sync : SyncInput -> IdemChain CredUpdate (VBA a)
 sync data context =
     let
-        input = { accessToken = Context.getAccessToken context
-                , baseUrl = Context.getBaseUrl context
-                , filter = data.filter
-                , fullState = data.fullState
-                , setPresence = data.setPresence
-                , since = data.since
-                , timeout = data.timeout
-                }
+        input =
+            { accessToken = Context.getAccessToken context
+            , baseUrl = Context.getBaseUrl context
+            , filter = data.filter
+            , fullState = data.fullState
+            , setPresence = data.setPresence
+            , since = data.since
+            , timeout = data.timeout
+            }
     in
-        input
+    input
         |> Sync.sync (Context.getVersions context)
         |> Task.map
             (\output ->
@@ -316,6 +348,7 @@ sync data context =
                     }
             )
 
+
 {-| Insert versions, or get them if they are not provided.
 -}
 versions : Maybe V.Versions -> TaskChain CredUpdate { a | baseUrl : () } (VB a)
@@ -323,38 +356,41 @@ versions mVersions =
     case mVersions of
         Just vs ->
             withVersions vs
-        
+
         Nothing ->
             getVersions
 
-{-| Create a task that insert the base URL into the context. 
+
+{-| Create a task that insert the base URL into the context.
 -}
 withBaseUrl : String -> TaskChain CredUpdate a { a | baseUrl : () }
 withBaseUrl baseUrl =
     { contextChange = Context.setBaseUrl baseUrl
     , messages = []
     }
-    |> Chain.TaskChainPiece
-    |> Task.succeed
-    |> always
+        |> Chain.TaskChainPiece
+        |> Task.succeed
+        |> always
+
 
 {-| Create a task that inserts a transaction id into the context.
 -}
 withTransactionId : (Int -> String) -> TaskChain CredUpdate a { a | transactionId : () }
 withTransactionId toString =
     Time.now
-    |> Task.map
-        (\now ->
-            { contextChange =
-                now
-                |> Time.posixToMillis
-                |> toString
-                |> Context.setTransactionId
-            , messages = []
-            }
-            |> Chain.TaskChainPiece
-        )
-    |> always
+        |> Task.map
+            (\now ->
+                { contextChange =
+                    now
+                        |> Time.posixToMillis
+                        |> toString
+                        |> Context.setTransactionId
+                , messages = []
+                }
+                    |> Chain.TaskChainPiece
+            )
+        |> always
+
 
 {-| Create a task that inserts versions into the context.
 -}
@@ -363,6 +399,6 @@ withVersions vs =
     { contextChange = Context.setVersions vs.versions
     , messages = []
     }
-    |> Chain.TaskChainPiece
-    |> Task.succeed
-    |> always
+        |> Chain.TaskChainPiece
+        |> Task.succeed
+        |> always

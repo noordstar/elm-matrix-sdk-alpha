@@ -5,6 +5,7 @@ import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
+
 loginWithUsernameAndPassword : List String -> LoginWithUsernameAndPasswordInput -> Task X.Error LoginWithUsernameAndPasswordOutput
 loginWithUsernameAndPassword versions =
     VC.withBottomLayer
@@ -18,6 +19,6 @@ loginWithUsernameAndPassword versions =
 type alias LoginWithUsernameAndPasswordInput =
     Api.LoginWithUsernameAndPasswordInputV1
 
+
 type alias LoginWithUsernameAndPasswordOutput =
     Api.LoginWithUsernameAndPasswordOutputV1
-

@@ -9,8 +9,8 @@ that the credentials type needs to know about before it can make a request.
 -}
 
 import Internal.Api.LoginWithUsernameAndPassword.V1.Login as L
-import Internal.Api.Versions.V1.Versions as V
 import Internal.Api.Request as R
+import Internal.Api.Versions.V1.Versions as V
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
 import Internal.Tools.ValueGetter exposing (ValueGetter)

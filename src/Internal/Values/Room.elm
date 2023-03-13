@@ -51,11 +51,12 @@ getEventById : String -> IRoom -> Maybe IEvent
 getEventById eventId (IRoom room) =
     Hashdict.get eventId room.events
 
+
 getStateEvent : { eventType : String, stateKey : String } -> IRoom -> Maybe IEvent
 getStateEvent data (IRoom room) =
     room.timeline
-    |> Timeline.mostRecentState
-    |> StateManager.getStateEvent data
+        |> Timeline.mostRecentState
+        |> StateManager.getStateEvent data
 
 
 {-| Get the room's id.

@@ -22,13 +22,12 @@ invite versions =
         |> VC.sameForVersion "r0.6.1"
         |> VC.addMiddleLayer
             { downcast =
-                (\data ->
+                \data ->
                     { accessToken = data.accessToken
                     , baseUrl = data.baseUrl
                     , roomId = data.roomId
                     , userId = data.userId
                     }
-                )
             , current = Api.inviteV2
             , upcast = identity
             , version = "v1.1"
@@ -40,8 +39,10 @@ invite versions =
         |> VC.mostRecentFromVersionList versions
         |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
 
+
 type alias InviteInput =
     Api.InviteInputV2
+
 
 type alias InviteOutput =
     Api.InviteOutputV1
