@@ -30,7 +30,7 @@ type as a message to the Credentials to update certain information.
 
 -}
 
-import Internal.Api.Context as Context exposing (Context)
+import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
 

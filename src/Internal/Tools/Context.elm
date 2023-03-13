@@ -1,4 +1,4 @@
-module Internal.Api.Context exposing (..)
+module Internal.Tools.Context exposing (..)
 
 {-| This module hosts functions for the `Context` type.
 

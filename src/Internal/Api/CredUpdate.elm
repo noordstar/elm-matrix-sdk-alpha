@@ -1,7 +1,7 @@
 module Internal.Api.CredUpdate exposing (..)
 
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
-import Internal.Api.Context as Context exposing (VB, VBA, VBAT)
+import Internal.Tools.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinedMembers.Main as JoinedMembers
