@@ -1,13 +1,14 @@
 module Internal.Api.Redact.Main exposing (..)
 
 import Internal.Api.Redact.Api as Api
+import Internal.Tools.Context as Context exposing (Context, VBAT)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-redact : List String -> RedactInput -> Task X.Error RedactOutput
-redact versions =
+redact : Context (VBAT a) -> RedactInput -> Task X.Error RedactOutput
+redact context input =
     VC.withBottomLayer
         { current = Api.redactV1
         , version = "r0.0.0"
@@ -30,8 +31,10 @@ redact versions =
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias RedactInput =

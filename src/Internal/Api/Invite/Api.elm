@@ -1,23 +1,20 @@
 module Internal.Api.Invite.Api exposing (..)
 
 import Internal.Api.Request as R
+import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
 import Task exposing (Task)
 
 
 type alias InviteInputV1 =
-    { accessToken : String
-    , baseUrl : String
-    , roomId : String
+    { roomId : String
     , userId : String
     }
 
 
 type alias InviteInputV2 =
-    { accessToken : String
-    , baseUrl : String
-    , reason : Maybe String
+    { reason : Maybe String
     , roomId : String
     , userId : String
     }
@@ -27,40 +24,24 @@ type alias InviteOutputV1 =
     ()
 
 
-inviteV1 : InviteInputV1 -> Task X.Error InviteOutputV1
-inviteV1 data =
-    R.rawApiCall
-        { headers = R.WithAccessToken data.accessToken
-        , method = "POST"
-        , baseUrl = data.baseUrl
-        , path = "/_matrix/client/r0/rooms/{roomId}/invite"
-        , pathParams =
-            [ ( "roomId", data.roomId )
+inviteV1 : InviteInputV1 -> Context { a | accessToken : (), baseUrl : () } -> Task X.Error InviteOutputV1
+inviteV1 { roomId, userId } =
+    R.callApi "POST" "/_matrix/client/r0/rooms/{roomId}/invite"
+        >> R.withAttributes
+            [ R.accessToken
+            , R.replaceInUrl "roomId" roomId
+            , R.bodyString "user_id" userId
             ]
-        , queryParams = []
-        , bodyParams =
-            [ R.RequiredString "user_id" data.userId
-            ]
-        , timeout = Nothing
-        , decoder = always (D.map (always ()) D.value)
-        }
+        >> R.toTask (D.map (always ()) D.value)
 
 
-inviteV2 : InviteInputV2 -> Task X.Error InviteOutputV1
-inviteV2 data =
-    R.rawApiCall
-        { headers = R.WithAccessToken data.accessToken
-        , method = "POST"
-        , baseUrl = data.baseUrl
-        , path = "/_matrix/client/r0/rooms/{roomId}/invite"
-        , pathParams =
-            [ ( "roomId", data.roomId )
+inviteV2 : InviteInputV2 -> Context { a | accessToken : (), baseUrl : () } -> Task X.Error InviteOutputV1
+inviteV2 { reason, roomId, userId } =
+    R.callApi "POST" "/_matrix/client/v3/rooms/{roomId}/invite"
+        >> R.withAttributes
+            [ R.accessToken
+            , R.replaceInUrl "roomId" roomId
+            , R.bodyString "user_id" userId
+            , R.bodyOpString "reason" reason
             ]
-        , queryParams = []
-        , bodyParams =
-            [ R.RequiredString "user_id" data.userId
-            , R.OptionalString "reason" data.reason
-            ]
-        , timeout = Nothing
-        , decoder = always (D.map (always ()) D.value)
-        }
+        >> R.toTask (D.map (always ()) D.value)

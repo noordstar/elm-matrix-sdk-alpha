@@ -1,13 +1,14 @@
 module Internal.Api.JoinedMembers.Main exposing (..)
 
 import Internal.Api.JoinedMembers.Api as Api
+import Internal.Tools.Context as Context exposing (Context, VBA)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-joinedMembers : List String -> JoinedMembersInput -> Task X.Error JoinedMembersOutput
-joinedMembers versions =
+joinedMembers : Context (VBA a) -> JoinedMembersInput -> Task X.Error JoinedMembersOutput
+joinedMembers context input =
     VC.withBottomLayer
         { current = Api.joinedMembersV1
         , version = "r0.0.0"
@@ -30,8 +31,10 @@ joinedMembers versions =
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias JoinedMembersInput =

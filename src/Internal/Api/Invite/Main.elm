@@ -1,13 +1,14 @@
 module Internal.Api.Invite.Main exposing (..)
 
 import Internal.Api.Invite.Api as Api
+import Internal.Tools.Context as Context exposing (Context, VBA)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-invite : List String -> InviteInput -> Task X.Error InviteOutput
-invite versions =
+invite : Context (VBA a) -> InviteInput -> Task X.Error InviteOutput
+invite context input =
     VC.withBottomLayer
         { current = Api.inviteV1
         , version = "r0.0.0"
@@ -23,9 +24,7 @@ invite versions =
         |> VC.addMiddleLayer
             { downcast =
                 \data ->
-                    { accessToken = data.accessToken
-                    , baseUrl = data.baseUrl
-                    , roomId = data.roomId
+                    { roomId = data.roomId
                     , userId = data.userId
                     }
             , current = Api.inviteV2
@@ -36,8 +35,10 @@ invite versions =
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias InviteInput =

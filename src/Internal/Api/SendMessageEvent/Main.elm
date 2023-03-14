@@ -1,13 +1,14 @@
 module Internal.Api.SendMessageEvent.Main exposing (..)
 
 import Internal.Api.SendMessageEvent.Api as Api
+import Internal.Tools.Context as Context exposing (Context, VBAT)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sendMessageEvent : List String -> SendMessageEventInput -> Task X.Error SendMessageEventOutput
-sendMessageEvent versions =
+sendMessageEvent : Context (VBAT a) -> SendMessageEventInput -> Task X.Error SendMessageEventOutput
+sendMessageEvent context input =
     VC.withBottomLayer
         { current = Api.sendMessageEventV1
         , version = "r0.0.0"
@@ -30,8 +31,10 @@ sendMessageEvent versions =
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias SendMessageEventInput =

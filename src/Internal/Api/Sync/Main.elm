@@ -2,13 +2,14 @@ module Internal.Api.Sync.Main exposing (..)
 
 import Internal.Api.Sync.Api as Api
 import Internal.Api.Sync.V2.Upcast as U2
+import Internal.Tools.Context as Context exposing (Context, VBA)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sync : List String -> SyncInput -> Task X.Error SyncOutput
-sync versions =
+sync : Context (VBA a) -> SyncInput -> Task X.Error SyncOutput
+sync context input =
     VC.withBottomLayer
         { current = Api.syncV1
         , version = "v1.2"
@@ -21,8 +22,10 @@ sync versions =
             , version = "v1.4"
             }
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias SyncInput =

@@ -2,14 +2,14 @@ module Internal.Api.LoginWithUsernameAndPassword.Api exposing (..)
 
 import Internal.Api.LoginWithUsernameAndPassword.V1.Login as SO
 import Internal.Api.Request as R
+import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Encode as E
 import Task exposing (Task)
 
 
 type alias LoginWithUsernameAndPasswordInputV1 =
-    { baseUrl : String
-    , password : String
+    { password : String
     , username : String
     }
 
@@ -18,24 +18,16 @@ type alias LoginWithUsernameAndPasswordOutputV1 =
     SO.LoggedInResponse
 
 
-loginWithUsernameAndPasswordV1 : LoginWithUsernameAndPasswordInputV1 -> Task X.Error LoginWithUsernameAndPasswordOutputV1
-loginWithUsernameAndPasswordV1 data =
-    R.rawApiCall
-        { headers = R.NoHeaders
-        , method = "POST"
-        , baseUrl = data.baseUrl
-        , path = "/_matrix/client/v3/login"
-        , pathParams = []
-        , queryParams = []
-        , bodyParams =
+loginWithUsernameAndPasswordV1 : LoginWithUsernameAndPasswordInputV1 -> Context { a | baseUrl : () } -> Task X.Error LoginWithUsernameAndPasswordOutputV1
+loginWithUsernameAndPasswordV1 { username, password } =
+    R.callApi "POST" "/_matrix/client/v3/login"
+        >> R.withAttributes
             [ [ ( "type", E.string "m.id.user" )
-              , ( "user", E.string data.username )
+              , ( "user", E.string username )
               ]
                 |> E.object
-                |> R.RequiredValue "identifier"
-            , R.RequiredString "password" data.password
-            , R.RequiredString "type" "m.login.password"
+                |> R.bodyValue "identifier"
+            , R.bodyString "password" password
+            , R.bodyString "type" "m.login.password"
             ]
-        , timeout = Nothing
-        , decoder = always SO.loggedInResponseDecoder
-        }
+        >> R.toTask SO.loggedInResponseDecoder

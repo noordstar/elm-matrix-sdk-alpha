@@ -1,229 +1,321 @@
 module Internal.Api.Request exposing (..)
 
 import Http
+import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
 import Json.Encode as E
 import Process
 import Task exposing (Task)
 import Time
+import Url
 import Url.Builder as UrlBuilder
 
 
-{-| Make a raw API call to a Matrix API.
--}
-rawApiCall :
-    { headers : Headers
-    , method : String
-    , baseUrl : String
-    , path : String
-    , pathParams : List ( String, String )
-    , queryParams : List QueryParam
-    , bodyParams : List BodyParam
-    , timeout : Maybe Float
-    , decoder : Int -> D.Decoder a
-    }
-    -> Task X.Error a
-rawApiCall data =
-    Http.task
-        { method = data.method
-        , headers = fromHeaders data.headers
-        , url = buildUrl data.baseUrl data.path data.pathParams data.queryParams
-        , body = toBody data.bodyParams
-        , resolver = rawApiCallResolver data.decoder
-        , timeout = data.timeout
+type ApiCall ph
+    = ApiCall
+        { attributes : List ContextAttr
+        , baseUrl : String
+        , context : Context ph
+        , method : String
         }
 
 
-withRateLimits : Int -> Task X.Error a -> Task X.Error a
-withRateLimits timeout task =
-    Time.now
-        |> Task.onError
-            (\_ -> X.CouldntGetTimestamp |> X.SDKException |> Task.fail)
-        |> Task.andThen
-            (\now ->
-                task
-                    |> Task.onError
-                        (\err ->
-                            case err of
-                                X.ServerException (X.M_LIMIT_EXCEEDED data) ->
-                                    case data.retryAfterMs of
-                                        Just t ->
-                                            Process.sleep (toFloat t)
-                                                |> Task.andThen (\_ -> Time.now)
-                                                |> Task.andThen
-                                                    (\newNow ->
-                                                        let
-                                                            diff : Int
-                                                            diff =
-                                                                timeout - (Time.posixToMillis newNow - Time.posixToMillis now)
-                                                        in
-                                                        if diff <= 0 then
-                                                            Task.fail err
+type alias Attribute a =
+    Context a -> ContextAttr
 
-                                                        else
-                                                            withRateLimits diff task
-                                                    )
 
-                                        Nothing ->
-                                            Task.fail err
+type ContextAttr
+    = BodyParam String E.Value
+    | FullBody E.Value
+    | Header Http.Header
+    | NoAttr
+    | QueryParam UrlBuilder.QueryParameter
+    | ReplaceInUrl String String
+    | Timeout Float
+    | UrlPath String
+
+
+callApi : String -> String -> Context { a | baseUrl : () } -> ApiCall { a | baseUrl : () }
+callApi method path context =
+    ApiCall
+        { attributes =
+            [ UrlPath path
+            ]
+        , baseUrl = Context.getBaseUrl context
+        , context = context
+        , method = method
+        }
+
+
+
+{- GETTING VALUES
+
+   Once a user has finished building the ApiCall, we will build the task.
+-}
+
+
+toTask : D.Decoder a -> ApiCall ph -> Task X.Error a
+toTask decoder (ApiCall data) =
+    Http.task
+        { method = data.method
+        , headers =
+            List.filterMap
+                (\attr ->
+                    case attr of
+                        Header h ->
+                            Just h
+
+                        _ ->
+                            Nothing
+                )
+                data.attributes
+        , url = getUrl (ApiCall data)
+        , body =
+            data.attributes
+                |> List.filterMap
+                    (\attr ->
+                        case attr of
+                            FullBody v ->
+                                Just v
+
+                            _ ->
+                                Nothing
+                    )
+                |> List.reverse
+                |> List.head
+                |> Maybe.withDefault
+                    (List.filterMap
+                        (\attr ->
+                            case attr of
+                                BodyParam key value ->
+                                    Just ( key, value )
 
                                 _ ->
-                                    Task.fail err
+                                    Nothing
                         )
-            )
-
-
-{-| Potential headers to go along with a Matrix API call.
--}
-type Headers
-    = NoHeaders
-    | WithAccessToken String
-    | WithContentType String
-    | WithBoth { accessToken : String, contentType : String }
-
-
-{-| Turn Headers into useful values
--}
-fromHeaders : Headers -> List Http.Header
-fromHeaders h =
-    (case h of
-        NoHeaders ->
-            [ ( "Content-Type", "application/json" ) ]
-
-        WithAccessToken token ->
-            [ ( "Content-Type", "application/json" ), ( "Authorization", "Bearer " ++ token ) ]
-
-        WithContentType contentType ->
-            [ ( "Content-Type", contentType ) ]
-
-        WithBoth data ->
-            [ ( "Content-Type", data.contentType ), ( "Authorization", "Bearer " ++ data.accessToken ) ]
-    )
-        |> List.map (\( a, b ) -> Http.header a b)
-
-
-{-| -}
-type QueryParam
-    = QueryParamString String String
-    | OpQueryParamString String (Maybe String)
-    | QueryParamInt String Int
-    | OpQueryParamInt String (Maybe Int)
-    | QueryParamBool String Bool
-    | OpQueryParamBool String (Maybe Bool)
-
-
-fromQueryParam : QueryParam -> Maybe UrlBuilder.QueryParameter
-fromQueryParam param =
-    case param of
-        QueryParamString key value ->
-            Just <| UrlBuilder.string key value
-
-        OpQueryParamString key value ->
-            Maybe.map (UrlBuilder.string key) value
-
-        QueryParamInt key value ->
-            Just <| UrlBuilder.int key value
-
-        OpQueryParamInt key value ->
-            Maybe.map (UrlBuilder.int key) value
-
-        QueryParamBool key value ->
-            if value then
-                Just <| UrlBuilder.string key "true"
-
-            else
-                Just <| UrlBuilder.string key "false"
-
-        OpQueryParamBool key value ->
-            Maybe.andThen (QueryParamBool key >> fromQueryParam) value
-
-
-fromQueryParams : List QueryParam -> List UrlBuilder.QueryParameter
-fromQueryParams =
-    List.map fromQueryParam
-        >> List.filterMap identity
-
-
-buildUrl : String -> String -> List ( String, String ) -> List QueryParam -> String
-buildUrl baseUrl path pathParams queryParams =
-    let
-        fullPath : String
-        fullPath =
-            List.foldl
-                (\( a, b ) -> String.replace ("{" ++ a ++ "}") b)
-                path
-                pathParams
-                |> (\s ->
-                        if String.startsWith "/" s then
-                            String.dropLeft 1 s
-
-                        else
-                            s
-                   )
-    in
-    UrlBuilder.crossOrigin baseUrl [ fullPath ] (fromQueryParams queryParams)
-
-
-{-| Type that gathers all parameters that go in the request body.
--}
-type BodyParam
-    = OptionalString String (Maybe String)
-    | RequiredString String String
-    | OptionalInt String (Maybe Int)
-    | RequiredInt String Int
-    | OptionalValue String (Maybe E.Value)
-    | RequiredValue String E.Value
-
-
-encodeBodyParam : BodyParam -> ( String, Maybe E.Value )
-encodeBodyParam b =
-    case b of
-        OptionalString h s ->
-            ( h, Maybe.map E.string s )
-
-        RequiredString h s ->
-            ( h, Just <| E.string s )
-
-        OptionalInt h i ->
-            ( h, Maybe.map E.int i )
-
-        RequiredInt h i ->
-            ( h, Just <| E.int i )
-
-        OptionalValue h v ->
-            ( h, v )
-
-        RequiredValue h v ->
-            ( h, Just v )
-
-
-toBody : List BodyParam -> Http.Body
-toBody params =
-    case params of
-        (RequiredValue "*" v) :: [] ->
-            Http.jsonBody v
-
-        _ ->
-            List.map encodeBodyParam params
-                |> maybeObject
+                        data.attributes
+                        |> E.object
+                    )
                 |> Http.jsonBody
+        , resolver = rawApiCallResolver (always decoder)
+        , timeout =
+            data.attributes
+                |> List.filterMap
+                    (\attr ->
+                        case attr of
+                            Timeout t ->
+                                Just t
+
+                            _ ->
+                                Nothing
+                    )
+                |> List.reverse
+                |> List.head
+        }
 
 
-{-| Create a body object based on optionally provided values.
--}
-maybeObject : List ( String, Maybe E.Value ) -> E.Value
-maybeObject =
+getUrl : ApiCall a -> String
+getUrl (ApiCall { baseUrl, attributes }) =
+    UrlBuilder.crossOrigin
+        baseUrl
+        (getPath attributes |> List.singleton)
+        (getQueryParams attributes)
+
+
+getPath : List ContextAttr -> String
+getPath =
+    List.foldl
+        (\attr prior ->
+            case attr of
+                UrlPath posterior ->
+                    posterior
+
+                ReplaceInUrl from to ->
+                    String.replace from to prior
+
+                _ ->
+                    prior
+        )
+        ""
+
+
+getQueryParams : List ContextAttr -> List UrlBuilder.QueryParameter
+getQueryParams =
     List.filterMap
-        (\( name, value ) ->
-            case value of
-                Just v ->
-                    Just ( name, v )
+        (\attr ->
+            case attr of
+                QueryParam q ->
+                    Just q
 
                 _ ->
                     Nothing
         )
-        >> E.object
+
+
+
+{- ATTRIBUTES
+
+   The following functions can alter how an ApiCall behaves,
+   and what information it will give to the Matrix API.
+-}
+
+
+withAttributes : List (Attribute a) -> ApiCall a -> ApiCall a
+withAttributes attrs (ApiCall data) =
+    ApiCall
+        { attributes =
+            attrs
+                |> List.map (\attr -> attr data.context)
+                |> List.append data.attributes
+        , baseUrl = data.baseUrl
+        , context = data.context
+        , method = data.method
+        }
+
+
+accessToken : Attribute { a | accessToken : () }
+accessToken =
+    Context.getAccessToken
+        >> Http.header "Authorization"
+        >> Header
+
+
+bodyBool : String -> Bool -> Attribute a
+bodyBool key value =
+    bodyValue key (E.bool value)
+
+
+bodyInt : String -> Int -> Attribute a
+bodyInt key value =
+    bodyValue key (E.int value)
+
+
+bodyOpBool : String -> Maybe Bool -> Attribute a
+bodyOpBool key value =
+    case value of
+        Just b ->
+            bodyBool key b
+
+        Nothing ->
+            always NoAttr
+
+
+bodyOpInt : String -> Maybe Int -> Attribute a
+bodyOpInt key value =
+    case value of
+        Just i ->
+            bodyInt key i
+
+        Nothing ->
+            always NoAttr
+
+
+bodyOpString : String -> Maybe String -> Attribute a
+bodyOpString key value =
+    case value of
+        Just s ->
+            bodyString key s
+
+        Nothing ->
+            always NoAttr
+
+
+bodyOpValue : String -> Maybe E.Value -> Attribute a
+bodyOpValue key value =
+    case value of
+        Just v ->
+            bodyValue key v
+
+        Nothing ->
+            always NoAttr
+
+
+bodyString : String -> String -> Attribute a
+bodyString key value =
+    bodyValue key (E.string value)
+
+
+bodyValue : String -> E.Value -> Attribute a
+bodyValue key value _ =
+    BodyParam key value
+
+
+fullBody : E.Value -> Attribute a
+fullBody value _ =
+    FullBody value
+
+
+queryBool : String -> Bool -> Attribute a
+queryBool key value _ =
+    (if value then
+        "true"
+
+     else
+        "false"
+    )
+        |> UrlBuilder.string key
+        |> QueryParam
+
+
+queryOpBool : String -> Maybe Bool -> Attribute a
+queryOpBool key value =
+    case value of
+        Just b ->
+            queryBool key b
+
+        Nothing ->
+            always NoAttr
+
+
+queryInt : String -> Int -> Attribute a
+queryInt key value _ =
+    QueryParam <| UrlBuilder.int key value
+
+
+queryOpInt : String -> Maybe Int -> Attribute a
+queryOpInt key value =
+    case value of
+        Just i ->
+            queryInt key i
+
+        Nothing ->
+            always NoAttr
+
+
+queryOpString : String -> Maybe String -> Attribute a
+queryOpString key value =
+    case value of
+        Just s ->
+            queryString key s
+
+        Nothing ->
+            always NoAttr
+
+
+queryString : String -> String -> Attribute a
+queryString key value _ =
+    QueryParam <| UrlBuilder.string key value
+
+
+replaceInUrl : String -> String -> Attribute a
+replaceInUrl key value _ =
+    ReplaceInUrl ("{" ++ key ++ "}") (Url.percentEncode value)
+
+
+timeout : Maybe Float -> Attribute a
+timeout mf _ =
+    case mf of
+        Just f ->
+            Timeout f
+
+        Nothing ->
+            NoAttr
+
+
+withTransactionId : Attribute { a | transactionId : () }
+withTransactionId =
+    Context.getTransactionId >> ReplaceInUrl "txnId"
 
 
 rawApiCallResolver : (Int -> D.Decoder a) -> Http.Resolver X.Error a

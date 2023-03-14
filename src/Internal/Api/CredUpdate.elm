@@ -41,6 +41,14 @@ type alias FutureTask =
     Task X.Error CredUpdate
 
 
+{-| Turn an API Task into a taskchain.
+-}
+toChain : (cout -> Chain.TaskChainPiece CredUpdate ph1 ph2) -> (Context.Context ph1 -> cin -> Task X.Error cout) -> cin -> TaskChain CredUpdate ph1 ph2
+toChain transform task input context =
+    task context input
+        |> Task.map transform
+
+
 {-| Turn a chain of tasks into a full executable task.
 -}
 toTask : TaskChain CredUpdate {} b -> FutureTask
@@ -86,134 +94,79 @@ accessToken ctoken =
                         { username = username, password = password }
 
 
-type alias GetEventInput =
-    { eventId : String, roomId : String }
-
-
 {-| Get an event from the API.
 -}
-getEvent : GetEventInput -> IdemChain CredUpdate (VBA a)
-getEvent { eventId, roomId } context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , eventId = eventId
-            , roomId = roomId
-            }
-    in
-    input
-        |> GetEvent.getEvent (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = identity
-                    , messages = [ GetEvent input output ]
-                    }
-            )
+getEvent : GetEvent.EventInput -> IdemChain CredUpdate (VBA a)
+getEvent input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ GetEvent input output ]
+                }
+        )
+        GetEvent.getEvent
+        input
 
 
 {-| Get the supported spec versions from the homeserver.
 -}
 getVersions : TaskChain CredUpdate { a | baseUrl : () } (VB a)
-getVersions context =
-    let
-        input =
-            Context.getBaseUrl context
-    in
-    Versions.getVersions input
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = Context.setVersions output.versions
-                    , messages = [ UpdateVersions output ]
-                    }
-            )
-
-
-type alias InviteInput =
-    { reason : Maybe String
-    , roomId : String
-    , userId : String
-    }
+getVersions =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = Context.setVersions output.versions
+                , messages = [ UpdateVersions output ]
+                }
+        )
+        (\context _ -> Versions.getVersions context)
+        ()
 
 
 {-| Invite a user to a room.
 -}
-invite : InviteInput -> IdemChain CredUpdate (VBA a)
-invite { reason, roomId, userId } context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , reason = reason
-            , roomId = roomId
-            , userId = userId
-            }
-    in
-    input
-        |> Invite.invite (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = identity
-                    , messages = [ InviteSent input output ]
-                    }
-            )
+invite : Invite.InviteInput -> IdemChain CredUpdate (VBA a)
+invite input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ InviteSent input output ]
+                }
+        )
+        Invite.invite
+        input
 
 
-type alias JoinedMembersInput =
-    { roomId : String }
+joinedMembers : JoinedMembers.JoinedMembersInput -> IdemChain CredUpdate (VBA a)
+joinedMembers input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ JoinedMembersToRoom input output ]
+                }
+        )
+        JoinedMembers.joinedMembers
+        input
 
 
-joinedMembers : JoinedMembersInput -> IdemChain CredUpdate (VBA a)
-joinedMembers { roomId } context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , roomId = roomId
-            }
-    in
-    input
-        |> JoinedMembers.joinedMembers (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = identity
-                    , messages = [ JoinedMembersToRoom input output ]
-                    }
-            )
-
-
-type alias LoginWithUsernameAndPasswordInput =
-    { password : String
-    , username : String
-    }
-
-
-loginWithUsernameAndPassword : LoginWithUsernameAndPasswordInput -> TaskChain CredUpdate (VB a) (VBA a)
-loginWithUsernameAndPassword ({ username, password } as data) context =
-    let
-        input =
-            { baseUrl = Context.getBaseUrl context
-            , username = username
-            , password = password
-            }
-    in
-    input
-        |> LoginWithUsernameAndPassword.loginWithUsernameAndPassword (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange =
-                        Context.setAccessToken
-                            { accessToken = output.accessToken
-                            , usernameAndPassword = Just data
-                            }
-                    , messages = [ LoggedInWithUsernameAndPassword input output ]
-                    }
-            )
+loginWithUsernameAndPassword : LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordInput -> TaskChain CredUpdate (VB a) (VBA a)
+loginWithUsernameAndPassword input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange =
+                    Context.setAccessToken
+                        { accessToken = output.accessToken
+                        , usernameAndPassword = Just input
+                        }
+                , messages = [ LoggedInWithUsernameAndPassword input output ]
+                }
+        )
+        LoginWithUsernameAndPassword.loginWithUsernameAndPassword
+        input
 
 
 {-| Make a VB-context based chain.
@@ -244,136 +197,64 @@ makeVBAT toString cred =
         |> Chain.andThen (withTransactionId toString)
 
 
-type alias RedactInput =
-    { eventId : String
-    , reason : Maybe String
-    , roomId : String
-    }
-
-
 {-| Redact an event from a room.
 -}
-redact : RedactInput -> TaskChain CredUpdate (VBAT a) (VBA a)
-redact { eventId, reason, roomId } context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , eventId = eventId
-            , reason = reason
-            , roomId = roomId
-            , txnId = Context.getTransactionId context
-            }
-    in
-    input
-        |> Redact.redact (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = Context.removeTransactionId
-                    , messages = [ RedactedEvent input output ]
-                    }
-            )
-
-
-type alias SendMessageEventInput =
-    { content : E.Value
-    , eventType : String
-    , roomId : String
-    }
+redact : Redact.RedactInput -> TaskChain CredUpdate (VBAT a) (VBA a)
+redact input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = Context.removeTransactionId
+                , messages = [ RedactedEvent input output ]
+                }
+        )
+        Redact.redact
+        input
 
 
 {-| Send a message event to a room.
 -}
-sendMessageEvent : SendMessageEventInput -> TaskChain CredUpdate (VBAT a) (VBA a)
-sendMessageEvent { content, eventType, roomId } context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , content = content
-            , eventType = eventType
-            , roomId = roomId
-            , transactionId = Context.getTransactionId context
-            }
-    in
-    input
-        |> SendMessageEvent.sendMessageEvent (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = Context.removeTransactionId
-                    , messages = [ MessageEventSent input output ]
-                    }
-            )
-
-
-type alias SendStateEventInput =
-    { content : E.Value
-    , eventType : String
-    , roomId : String
-    , stateKey : String
-    }
+sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain CredUpdate (VBAT a) (VBA a)
+sendMessageEvent input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = Context.removeTransactionId
+                , messages = [ MessageEventSent input output ]
+                }
+        )
+        SendMessageEvent.sendMessageEvent
+        input
 
 
 {-| Send a state key event to a room.
 -}
-sendStateEvent : SendStateEventInput -> IdemChain CredUpdate (VBA a)
-sendStateEvent { content, eventType, roomId, stateKey } context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , content = content
-            , eventType = eventType
-            , roomId = roomId
-            , stateKey = stateKey
-            }
-    in
-    input
-        |> SendStateKey.sendStateKey (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = identity
-                    , messages = [ StateEventSent input output ]
-                    }
-            )
-
-
-type alias SyncInput =
-    { filter : Maybe String
-    , fullState : Maybe Bool
-    , setPresence : Maybe Enums.UserPresence
-    , since : Maybe String
-    , timeout : Maybe Int
-    }
+sendStateEvent : SendStateKey.SendStateKeyInput -> IdemChain CredUpdate (VBA a)
+sendStateEvent input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ StateEventSent input output ]
+                }
+        )
+        SendStateKey.sendStateKey
+        input
 
 
 {-| Sync the latest updates.
 -}
-sync : SyncInput -> IdemChain CredUpdate (VBA a)
-sync data context =
-    let
-        input =
-            { accessToken = Context.getAccessToken context
-            , baseUrl = Context.getBaseUrl context
-            , filter = data.filter
-            , fullState = data.fullState
-            , setPresence = data.setPresence
-            , since = data.since
-            , timeout = data.timeout
-            }
-    in
-    input
-        |> Sync.sync (Context.getVersions context)
-        |> Task.map
-            (\output ->
-                Chain.TaskChainPiece
-                    { contextChange = identity
-                    , messages = [ SyncUpdate input output ]
-                    }
-            )
+sync : Sync.SyncInput -> IdemChain CredUpdate (VBA a)
+sync input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ SyncUpdate input output ]
+                }
+        )
+        Sync.sync
+        input
 
 
 {-| Insert versions, or get them if they are not provided.

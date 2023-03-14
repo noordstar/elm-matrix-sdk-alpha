@@ -1,13 +1,14 @@
 module Internal.Api.SendStateKey.Main exposing (..)
 
 import Internal.Api.SendStateKey.Api as Api
+import Internal.Tools.Context as Context exposing (Context, VBA)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sendStateKey : List String -> SendStateKeyInput -> Task X.Error SendStateKeyOutput
-sendStateKey versions =
+sendStateKey : Context (VBA a) -> SendStateKeyInput -> Task X.Error SendStateKeyOutput
+sendStateKey context input =
     VC.withBottomLayer
         { current = Api.sendStateKeyV1
         , version = "r0.0.0"
@@ -30,8 +31,10 @@ sendStateKey versions =
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias SendStateKeyInput =
