@@ -4,10 +4,10 @@ module Internal.Room exposing (..)
 -}
 
 import Dict
-import Internal.Api.CredUpdate exposing (CredUpdate)
 import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Api.Task as Api
+import Internal.Api.VaultUpdate exposing (VaultUpdate)
 import Internal.Event as Event exposing (Event)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.Hashdict as Hashdict
@@ -136,33 +136,29 @@ roomId =
 
 {-| Sends a new event to the Matrix room associated with the given `Room`.
 -}
-sendEvent : Room -> { eventType : String, content : E.Value } -> Task X.Error CredUpdate
+sendEvent : Room -> { eventType : String, content : E.Value } -> Task X.Error VaultUpdate
 sendEvent (Room { context, room }) { eventType, content } =
     Api.sendMessageEvent
-        { accessToken = Credentials.accessToken context
-        , baseUrl = Credentials.baseUrl context
-        , content = content
+        { content = content
         , eventType = eventType
-        , roomId = Internal.roomId room
-        , versions = Credentials.versions context
         , extraTransactionNoise = "content-value:<object>"
+        , roomId = Internal.roomId room
         }
+        context
 
 
 {-| Sends a new text message to the Matrix room associated with the given `Room`.
 -}
-sendMessage : Room -> String -> Task X.Error CredUpdate
+sendMessage : Room -> String -> Task X.Error VaultUpdate
 sendMessage (Room { context, room }) text =
     Api.sendMessageEvent
-        { accessToken = Credentials.accessToken context
-        , baseUrl = Credentials.baseUrl context
-        , content =
+        { content =
             E.object
                 [ ( "msgtype", E.string "m.text" )
                 , ( "body", E.string text )
                 ]
         , eventType = "m.room.message"
-        , roomId = Internal.roomId room
-        , versions = Credentials.versions context
         , extraTransactionNoise = "literal-message:" ++ text
+        , roomId = Internal.roomId room
         }
+        context

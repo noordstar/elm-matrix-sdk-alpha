@@ -5,8 +5,13 @@ module Internal.Api.Task exposing (..)
 
 import Hash
 import Internal.Api.Chain as Chain
-import Internal.Api.CredUpdate as C
 import Internal.Api.Credentials exposing (Credentials)
+import Internal.Api.GetEvent.Main exposing (EventInput)
+import Internal.Api.Invite.Main exposing (InviteInput)
+import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
+import Internal.Api.SendStateKey.Main exposing (SendStateKeyInput)
+import Internal.Api.Sync.Main exposing (SyncInput)
+import Internal.Api.VaultUpdate as C
 import Json.Encode as E
 
 
@@ -14,21 +19,21 @@ type alias FutureTask =
     C.FutureTask
 
 
-getEvent : C.GetEventInput -> Credentials -> FutureTask
+getEvent : EventInput -> Credentials -> FutureTask
 getEvent data cred =
     C.makeVBA cred
         |> Chain.andThen (C.getEvent data)
         |> C.toTask
 
 
-invite : C.InviteInput -> Credentials -> FutureTask
+invite : InviteInput -> Credentials -> FutureTask
 invite data cred =
     C.makeVBA cred
         |> Chain.andThen (C.invite data)
         |> C.toTask
 
 
-joinedMembers : C.JoinedMembersInput -> Credentials -> FutureTask
+joinedMembers : JoinedMembersInput -> Credentials -> FutureTask
 joinedMembers data cred =
     C.makeVBA cred
         |> Chain.andThen (C.joinedMembers data)
@@ -90,15 +95,15 @@ sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
         |> C.toTask
 
 
-sendStateKey : C.SendStateEventInput -> Credentials -> FutureTask
-sendStateKey data cred =
+sendStateEvent : SendStateKeyInput -> Credentials -> FutureTask
+sendStateEvent data cred =
     C.makeVBA cred
         |> Chain.andThen (C.sendStateEvent data)
         -- TODO: Get event from API to see what it looks like
         |> C.toTask
 
 
-sync : C.SyncInput -> Credentials -> FutureTask
+sync : SyncInput -> Credentials -> FutureTask
 sync data cred =
     C.makeVBA cred
         |> Chain.andThen (C.sync data)

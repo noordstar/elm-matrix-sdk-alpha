@@ -1,4 +1,4 @@
-module Internal.Api.CredUpdate exposing (..)
+module Internal.Api.VaultUpdate exposing (..)
 
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
 import Internal.Api.Credentials as Credentials exposing (Credentials)
@@ -15,14 +15,12 @@ import Internal.Api.Versions.V1.Versions as V
 import Internal.Tools.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
-import Internal.Tools.SpecEnums as Enums
-import Json.Encode as E
 import Task exposing (Task)
 import Time
 
 
-type CredUpdate
-    = MultipleUpdates (List CredUpdate)
+type VaultUpdate
+    = MultipleUpdates (List VaultUpdate)
       -- Updates as a result of API calls
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | InviteSent Invite.InviteInput Invite.InviteOutput
@@ -38,12 +36,12 @@ type CredUpdate
 
 
 type alias FutureTask =
-    Task X.Error CredUpdate
+    Task X.Error VaultUpdate
 
 
 {-| Turn an API Task into a taskchain.
 -}
-toChain : (cout -> Chain.TaskChainPiece CredUpdate ph1 ph2) -> (Context.Context ph1 -> cin -> Task X.Error cout) -> cin -> TaskChain CredUpdate ph1 ph2
+toChain : (cout -> Chain.TaskChainPiece VaultUpdate ph1 ph2) -> (Context.Context ph1 -> cin -> Task X.Error cout) -> cin -> TaskChain VaultUpdate ph1 ph2
 toChain transform task input context =
     task context input
         |> Task.map transform
@@ -51,7 +49,7 @@ toChain transform task input context =
 
 {-| Turn a chain of tasks into a full executable task.
 -}
-toTask : TaskChain CredUpdate {} b -> FutureTask
+toTask : TaskChain VaultUpdate {} b -> FutureTask
 toTask =
     Chain.toTask
         >> Task.map
@@ -67,7 +65,7 @@ toTask =
 
 {-| Get a functional access token.
 -}
-accessToken : AccessToken -> TaskChain CredUpdate (VB a) (VBA a)
+accessToken : AccessToken -> TaskChain VaultUpdate (VB a) (VBA a)
 accessToken ctoken =
     case ctoken of
         NoAccess ->
@@ -96,7 +94,7 @@ accessToken ctoken =
 
 {-| Get an event from the API.
 -}
-getEvent : GetEvent.EventInput -> IdemChain CredUpdate (VBA a)
+getEvent : GetEvent.EventInput -> IdemChain VaultUpdate (VBA a)
 getEvent input =
     toChain
         (\output ->
@@ -111,7 +109,7 @@ getEvent input =
 
 {-| Get the supported spec versions from the homeserver.
 -}
-getVersions : TaskChain CredUpdate { a | baseUrl : () } (VB a)
+getVersions : TaskChain VaultUpdate { a | baseUrl : () } (VB a)
 getVersions =
     toChain
         (\output ->
@@ -126,7 +124,7 @@ getVersions =
 
 {-| Invite a user to a room.
 -}
-invite : Invite.InviteInput -> IdemChain CredUpdate (VBA a)
+invite : Invite.InviteInput -> IdemChain VaultUpdate (VBA a)
 invite input =
     toChain
         (\output ->
@@ -139,7 +137,7 @@ invite input =
         input
 
 
-joinedMembers : JoinedMembers.JoinedMembersInput -> IdemChain CredUpdate (VBA a)
+joinedMembers : JoinedMembers.JoinedMembersInput -> IdemChain VaultUpdate (VBA a)
 joinedMembers input =
     toChain
         (\output ->
@@ -152,7 +150,7 @@ joinedMembers input =
         input
 
 
-loginWithUsernameAndPassword : LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordInput -> TaskChain CredUpdate (VB a) (VBA a)
+loginWithUsernameAndPassword : LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordInput -> TaskChain VaultUpdate (VB a) (VBA a)
 loginWithUsernameAndPassword input =
     toChain
         (\output ->
@@ -171,7 +169,7 @@ loginWithUsernameAndPassword input =
 
 {-| Make a VB-context based chain.
 -}
-makeVB : Credentials -> TaskChain CredUpdate {} (VB {})
+makeVB : Credentials -> TaskChain VaultUpdate {} (VB {})
 makeVB cred =
     cred
         |> Credentials.baseUrl
@@ -181,7 +179,7 @@ makeVB cred =
 
 {-| Make a VBA-context based chain.
 -}
-makeVBA : Credentials -> TaskChain CredUpdate {} (VBA {})
+makeVBA : Credentials -> TaskChain VaultUpdate {} (VBA {})
 makeVBA cred =
     cred
         |> makeVB
@@ -190,7 +188,7 @@ makeVBA cred =
 
 {-| Make a VBAT-context based chain.
 -}
-makeVBAT : (Int -> String) -> Credentials -> TaskChain CredUpdate {} (VBAT {})
+makeVBAT : (Int -> String) -> Credentials -> TaskChain VaultUpdate {} (VBAT {})
 makeVBAT toString cred =
     cred
         |> makeVBA
@@ -199,7 +197,7 @@ makeVBAT toString cred =
 
 {-| Redact an event from a room.
 -}
-redact : Redact.RedactInput -> TaskChain CredUpdate (VBAT a) (VBA a)
+redact : Redact.RedactInput -> TaskChain VaultUpdate (VBAT a) (VBA a)
 redact input =
     toChain
         (\output ->
@@ -214,7 +212,7 @@ redact input =
 
 {-| Send a message event to a room.
 -}
-sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain CredUpdate (VBAT a) (VBA a)
+sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain VaultUpdate (VBAT a) (VBA a)
 sendMessageEvent input =
     toChain
         (\output ->
@@ -229,7 +227,7 @@ sendMessageEvent input =
 
 {-| Send a state key event to a room.
 -}
-sendStateEvent : SendStateKey.SendStateKeyInput -> IdemChain CredUpdate (VBA a)
+sendStateEvent : SendStateKey.SendStateKeyInput -> IdemChain VaultUpdate (VBA a)
 sendStateEvent input =
     toChain
         (\output ->
@@ -244,7 +242,7 @@ sendStateEvent input =
 
 {-| Sync the latest updates.
 -}
-sync : Sync.SyncInput -> IdemChain CredUpdate (VBA a)
+sync : Sync.SyncInput -> IdemChain VaultUpdate (VBA a)
 sync input =
     toChain
         (\output ->
@@ -259,7 +257,7 @@ sync input =
 
 {-| Insert versions, or get them if they are not provided.
 -}
-versions : Maybe V.Versions -> TaskChain CredUpdate { a | baseUrl : () } (VB a)
+versions : Maybe V.Versions -> TaskChain VaultUpdate { a | baseUrl : () } (VB a)
 versions mVersions =
     case mVersions of
         Just vs ->
@@ -271,7 +269,7 @@ versions mVersions =
 
 {-| Create a task that insert the base URL into the context.
 -}
-withBaseUrl : String -> TaskChain CredUpdate a { a | baseUrl : () }
+withBaseUrl : String -> TaskChain VaultUpdate a { a | baseUrl : () }
 withBaseUrl baseUrl =
     { contextChange = Context.setBaseUrl baseUrl
     , messages = []
@@ -283,7 +281,7 @@ withBaseUrl baseUrl =
 
 {-| Create a task that inserts a transaction id into the context.
 -}
-withTransactionId : (Int -> String) -> TaskChain CredUpdate a { a | transactionId : () }
+withTransactionId : (Int -> String) -> TaskChain VaultUpdate a { a | transactionId : () }
 withTransactionId toString =
     Time.now
         |> Task.map
@@ -302,7 +300,7 @@ withTransactionId toString =
 
 {-| Create a task that inserts versions into the context.
 -}
-withVersions : V.Versions -> TaskChain CredUpdate { a | baseUrl : () } (VB a)
+withVersions : V.Versions -> TaskChain VaultUpdate { a | baseUrl : () } (VB a)
 withVersions vs =
     { contextChange = Context.setVersions vs.versions
     , messages = []

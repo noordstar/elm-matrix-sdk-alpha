@@ -1,13 +1,14 @@
 module Internal.Api.GetEvent.Main exposing (..)
 
 import Internal.Api.GetEvent.Api as Api
+import Internal.Tools.Context as Context exposing (Context, VBA)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-getEvent : List String -> EventInput -> Task X.Error EventOutput
-getEvent versions =
+getEvent : Context (VBA a) -> EventInput -> Task X.Error EventOutput
+getEvent context input =
     VC.withBottomLayer
         { current = Api.getEventInputV1
         , version = "r0.5.0"
@@ -19,8 +20,10 @@ getEvent versions =
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
-        |> VC.mostRecentFromVersionList versions
-        |> Maybe.withDefault (always <| Task.fail X.UnsupportedSpecVersion)
+        |> VC.mostRecentFromVersionList (Context.getVersions context)
+        |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
+        |> (|>) input
+        |> (|>) context
 
 
 type alias EventOutput =

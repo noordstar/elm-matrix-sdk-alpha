@@ -18,7 +18,9 @@ sync context input =
         |> VC.addMiddleLayer
             { current = Api.syncV2
             , downcast = identity
-            , upcast = Task.map U2.upcastSync
+            , upcast =
+                \f c ->
+                    Task.map U2.upcastSync (f c)
             , version = "v1.4"
             }
         |> VC.sameForVersion "v1.5"

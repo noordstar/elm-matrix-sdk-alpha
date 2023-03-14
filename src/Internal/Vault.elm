@@ -8,9 +8,9 @@ This file combines the internal functions with the API endpoints to create a ful
 -}
 
 import Dict
-import Internal.Api.CredUpdate exposing (CredUpdate(..))
 import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.Task as Api
+import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
 import Internal.Event as Event
 import Internal.Room as Room
 import Internal.Tools.Exceptions as X
@@ -88,9 +88,9 @@ insertRoom =
 
 {-| Update the Vault type with new values
 -}
-updateWith : CredUpdate -> Vault -> Vault
-updateWith credUpdate ((Vault ({ cred, context } as data)) as credentials) =
-    case credUpdate of
+updateWith : VaultUpdate -> Vault -> Vault
+updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
+    case vaultUpdate of
         MultipleUpdates updates ->
             List.foldl updateWith credentials updates
 
@@ -193,18 +193,16 @@ updateWith credUpdate ((Vault ({ cred, context } as data)) as credentials) =
 
 {-| Synchronize credentials
 -}
-sync : Vault -> Task X.Error CredUpdate
+sync : Vault -> Task X.Error VaultUpdate
 sync (Vault { cred, context }) =
     Api.sync
-        { accessToken = Credentials.accessToken context
-        , baseUrl = Credentials.baseUrl context
-        , filter = Nothing
+        { filter = Nothing
         , fullState = Nothing
         , setPresence = Nothing
         , since = Internal.getSince cred
         , timeout = Just 30
-        , versions = Credentials.versions context
         }
+        context
 
 
 {-| Get a list of all synchronised rooms.
