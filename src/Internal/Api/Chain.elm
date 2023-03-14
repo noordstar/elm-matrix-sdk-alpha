@@ -14,12 +14,12 @@ submodule, this can lead to indentation hell.
 This module aims to allow for simple task chaining without adding too much complexity
 if you wish to pass on values.
 
-The model is like a snake: \_\_\_\_\_
-/ o \\
-/-|------------ | ------- | ------------- | -------- | |//
-< | accessToken | baseUrl | transactionId | API call | |------< Final API call
--|------------ | ------- | ------------- | -------- | |//\\
------/
+The model is like a snake:                              _____
+                                                       /   o \
+  /-|------------ | ------- | ------------- | -------- | |\/\/
+ <  | accessToken | baseUrl | transactionId | API call | |------< Final API call
+  \-|------------ | ------- | ------------- | -------- | |/\/\
+                                                       \-----/
 
 (You're not allowed to judge my ASCII art skills unless you submit a PR with a
 superior ASCII snake model.)
