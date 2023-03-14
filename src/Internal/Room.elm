@@ -4,7 +4,7 @@ module Internal.Room exposing (..)
 -}
 
 import Dict
-import Internal.Api.Credentials as Credentials exposing (Credentials)
+import Internal.Api.Credentials exposing (Credentials)
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Api.Task as Api
 import Internal.Api.VaultUpdate exposing (VaultUpdate)

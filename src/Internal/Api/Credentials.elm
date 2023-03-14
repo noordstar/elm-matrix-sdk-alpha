@@ -24,6 +24,13 @@ accessToken (Credentials { access }) =
     access
 
 
+{-| Retrieves the access token type without the access token value in case the value is no longer valid.
+-}
+refreshedAccessToken : Credentials -> AccessToken
+refreshedAccessToken (Credentials { access }) =
+    Login.removeToken access
+
+
 {-| Add a new access token to the `Credentials` type.
 -}
 addToken : String -> Credentials -> Credentials

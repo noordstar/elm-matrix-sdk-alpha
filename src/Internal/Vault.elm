@@ -9,12 +9,12 @@ This file combines the internal functions with the API endpoints to create a ful
 
 import Dict
 import Internal.Api.Credentials as Credentials exposing (Credentials)
+import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.Task as Api
 import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
 import Internal.Event as Event
 import Internal.Room as Room
 import Internal.Tools.Exceptions as X
-import Internal.Values.Event as IEvent
 import Internal.Values.Room as IRoom
 import Internal.Values.StateManager as StateManager
 import Internal.Values.Vault as Internal
@@ -195,14 +195,44 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
 -}
 sync : Vault -> Task X.Error VaultUpdate
 sync (Vault { cred, context }) =
-    Api.sync
-        { filter = Nothing
-        , fullState = Nothing
-        , setPresence = Nothing
-        , since = Internal.getSince cred
-        , timeout = Just 30
-        }
-        context
+    let
+        syncInput : SyncInput
+        syncInput =
+            { filter = Nothing
+            , fullState = Nothing
+            , setPresence = Nothing
+            , since = Internal.getSince cred
+            , timeout = Just 30
+            }
+    in
+    Api.sync syncInput context
+        -- TODO: The sync function is described as "updating all the tokens".
+        -- TODO: For this reason, (only) the sync function should handle errors
+        -- TODO: that indicate that the user's access tokens have expired.
+        -- TODO: This implementation needs to be tested.
+        |> Task.onError
+            (\err ->
+                case err of
+                    X.UnsupportedSpecVersion ->
+                        Task.fail err
+
+                    X.SDKException _ ->
+                        Task.fail err
+
+                    X.InternetException _ ->
+                        Task.fail err
+
+                    -- TODO: The login should be different when soft_logout.
+                    -- TODO: Add support for refresh token.
+                    X.ServerException (X.M_UNKNOWN_TOKEN { soft_logout }) ->
+                        Api.loginMaybeSync syncInput context
+
+                    X.ServerException (X.M_MISSING_TOKEN { soft_logout }) ->
+                        Api.loginMaybeSync syncInput context
+
+                    X.ServerException _ ->
+                        Task.fail err
+            )
 
 
 {-| Get a list of all synchronised rooms.

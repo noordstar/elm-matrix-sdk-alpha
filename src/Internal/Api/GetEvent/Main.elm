@@ -7,7 +7,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-getEvent : Context (VBA a) -> EventInput -> Task X.Error EventOutput
+getEvent : Context (VBA { a | sentEvent : () }) -> EventInput -> Task X.Error EventOutput
 getEvent context input =
     VC.withBottomLayer
         { current = Api.getEventInputV1

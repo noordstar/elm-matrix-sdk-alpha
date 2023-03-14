@@ -94,7 +94,7 @@ accessToken ctoken =
 
 {-| Get an event from the API.
 -}
-getEvent : GetEvent.EventInput -> IdemChain VaultUpdate (VBA a)
+getEvent : GetEvent.EventInput -> IdemChain VaultUpdate (VBA { a | sentEvent : () })
 getEvent input =
     toChain
         (\output ->
@@ -212,12 +212,12 @@ redact input =
 
 {-| Send a message event to a room.
 -}
-sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain VaultUpdate (VBAT a) (VBA a)
+sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain VaultUpdate (VBAT a) (VBA { a | sentEvent : () })
 sendMessageEvent input =
     toChain
         (\output ->
             Chain.TaskChainPiece
-                { contextChange = Context.removeTransactionId
+                { contextChange = Context.removeTransactionId >> Context.setSentEvent output.eventId
                 , messages = [ MessageEventSent input output ]
                 }
         )
@@ -227,12 +227,12 @@ sendMessageEvent input =
 
 {-| Send a state key event to a room.
 -}
-sendStateEvent : SendStateKey.SendStateKeyInput -> IdemChain VaultUpdate (VBA a)
+sendStateEvent : SendStateKey.SendStateKeyInput -> TaskChain VaultUpdate (VBA a) (VBA { a | sentEvent : () })
 sendStateEvent input =
     toChain
         (\output ->
             Chain.TaskChainPiece
-                { contextChange = identity
+                { contextChange = Context.setSentEvent output.eventId
                 , messages = [ StateEventSent input output ]
                 }
         )
@@ -272,6 +272,18 @@ versions mVersions =
 withBaseUrl : String -> TaskChain VaultUpdate a { a | baseUrl : () }
 withBaseUrl baseUrl =
     { contextChange = Context.setBaseUrl baseUrl
+    , messages = []
+    }
+        |> Chain.TaskChainPiece
+        |> Task.succeed
+        |> always
+
+
+{-| Create a task that inserts an event id into the context, as if it were just sent.
+-}
+withSentEvent : String -> TaskChain VaultUpdate a { a | sentEvent : () }
+withSentEvent sentEvent =
+    { contextChange = Context.setSentEvent sentEvent
     , messages = []
     }
         |> Chain.TaskChainPiece

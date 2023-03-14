@@ -22,6 +22,7 @@ type Context a
     = Context
         { accessToken : String
         , baseUrl : String
+        , sentEvent : String
         , transactionId : String
         , usernameAndPassword : Maybe UsernameAndPassword
         , versions : List String
@@ -51,6 +52,7 @@ init =
     Context
         { accessToken = L.accessToken
         , baseUrl = L.baseUrl
+        , sentEvent = L.eventId
         , transactionId = L.transactionId
         , usernameAndPassword = Nothing
         , versions = L.versions
@@ -69,6 +71,13 @@ getAccessToken (Context { accessToken }) =
 getBaseUrl : Context { a | baseUrl : () } -> String
 getBaseUrl (Context { baseUrl }) =
     baseUrl
+
+
+{-| Get the event that has been sent to the API recently.
+-}
+getSentEvent : Context { a | sentEvent : () } -> String
+getSentEvent (Context { sentEvent }) =
+    sentEvent
 
 
 {-| Get the transaction id from the Context.
@@ -106,6 +115,13 @@ setBaseUrl baseUrl (Context data) =
     Context { data | baseUrl = baseUrl }
 
 
+{-| Insert a sent event id into the context.
+-}
+setSentEvent : String -> Context a -> Context { a | sentEvent : () }
+setSentEvent sentEvent (Context data) =
+    Context { data | sentEvent = sentEvent }
+
+
 {-| Insert a transaction id into the context.
 -}
 setTransactionId : String -> Context a -> Context { a | transactionId : () }
@@ -131,6 +147,13 @@ removeAccessToken (Context data) =
 -}
 removeBaseUrl : Context { a | baseUrl : () } -> Context a
 removeBaseUrl (Context data) =
+    Context data
+
+
+{-| Remove the sent event's id from the Context
+-}
+removeSentEvent : Context { a | sentEvent : () } -> Context a
+removeSentEvent (Context data) =
     Context data
 
 

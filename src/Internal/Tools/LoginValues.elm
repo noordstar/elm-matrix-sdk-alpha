@@ -79,3 +79,20 @@ addUsernameAndPassword { username, password } t =
                 , password = password
                 , token = token
                 }
+
+
+removeToken : AccessToken -> AccessToken
+removeToken t =
+    case t of
+        NoAccess ->
+            NoAccess
+
+        AccessToken _ ->
+            NoAccess
+
+        UsernameAndPassword { username, password } ->
+            UsernameAndPassword
+                { username = username
+                , password = password
+                , token = Nothing
+                }

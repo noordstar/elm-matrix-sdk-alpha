@@ -5,7 +5,7 @@ module Internal.Api.Task exposing (..)
 
 import Hash
 import Internal.Api.Chain as Chain
-import Internal.Api.Credentials exposing (Credentials)
+import Internal.Api.Credentials as Cred exposing (Credentials)
 import Internal.Api.GetEvent.Main exposing (EventInput)
 import Internal.Api.Invite.Main exposing (InviteInput)
 import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
@@ -19,10 +19,17 @@ type alias FutureTask =
     C.FutureTask
 
 
+type alias EventInput =
+    { eventId : String
+    , roomId : String
+    }
+
+
 getEvent : EventInput -> Credentials -> FutureTask
-getEvent data cred =
+getEvent { eventId, roomId } cred =
     C.makeVBA cred
-        |> Chain.andThen (C.getEvent data)
+        |> Chain.andThen (C.withSentEvent eventId)
+        |> Chain.andThen (C.getEvent { roomId = roomId })
         |> C.toTask
 
 
@@ -63,8 +70,9 @@ redact { eventId, extraTransactionNoise, reason, roomId } cred =
                     |> Hash.toString
             )
         |> Chain.andThen (C.redact { eventId = eventId, reason = reason, roomId = roomId })
+        |> Chain.andThen (C.withSentEvent eventId)
         |> Chain.andThen
-            (Chain.maybe <| C.getEvent { eventId = eventId, roomId = roomId })
+            (Chain.maybe <| C.getEvent { roomId = roomId })
         |> C.toTask
 
 
@@ -91,7 +99,8 @@ sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
                     |> Hash.toString
             )
         |> Chain.andThen (C.sendMessageEvent { content = content, eventType = eventType, roomId = roomId })
-        -- TODO: Get event from API to see what it looks like
+        |> Chain.andThen
+            (Chain.maybe <| C.getEvent { roomId = roomId })
         |> C.toTask
 
 
@@ -99,7 +108,8 @@ sendStateEvent : SendStateKeyInput -> Credentials -> FutureTask
 sendStateEvent data cred =
     C.makeVBA cred
         |> Chain.andThen (C.sendStateEvent data)
-        -- TODO: Get event from API to see what it looks like
+        |> Chain.andThen
+            (Chain.maybe <| C.getEvent { roomId = data.roomId })
         |> C.toTask
 
 
@@ -107,4 +117,13 @@ sync : SyncInput -> Credentials -> FutureTask
 sync data cred =
     C.makeVBA cred
         |> Chain.andThen (C.sync data)
+        |> C.toTask
+
+
+loginMaybeSync : SyncInput -> Credentials -> FutureTask
+loginMaybeSync data cred =
+    C.makeVB cred
+        |> Chain.andThen (C.accessToken (Cred.refreshedAccessToken cred))
+        |> Chain.andThen
+            (Chain.maybe <| C.sync data)
         |> C.toTask
