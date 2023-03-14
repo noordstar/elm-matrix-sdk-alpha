@@ -1,6 +1,7 @@
 module Internal.Api.Request exposing (..)
 
 import Http
+import Internal.Api.Helpers as Helpers
 import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
@@ -111,6 +112,7 @@ toTask decoder (ApiCall data) =
                 |> List.reverse
                 |> List.head
         }
+        |> Helpers.ratelimited
 
 
 getUrl : ApiCall a -> String

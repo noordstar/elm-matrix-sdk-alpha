@@ -208,6 +208,7 @@ redact input =
         )
         Redact.redact
         input
+        |> Chain.tryNTimes 5
 
 
 {-| Send a message event to a room.
@@ -223,6 +224,7 @@ sendMessageEvent input =
         )
         SendMessageEvent.sendMessageEvent
         input
+        |> Chain.tryNTimes 5
 
 
 {-| Send a state key event to a room.
@@ -238,6 +240,7 @@ sendStateEvent input =
         )
         SendStateKey.sendStateKey
         input
+        |> Chain.tryNTimes 5
 
 
 {-| Sync the latest updates.
@@ -259,12 +262,14 @@ sync input =
 -}
 versions : Maybe V.Versions -> TaskChain VaultUpdate { a | baseUrl : () } (VB a)
 versions mVersions =
-    case mVersions of
+    (case mVersions of
         Just vs ->
             withVersions vs
 
         Nothing ->
             getVersions
+    )
+        |> Chain.tryNTimes 5
 
 
 {-| Create a task that insert the base URL into the context.

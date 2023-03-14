@@ -30,6 +30,7 @@ type as a message to the Credentials to update certain information.
 
 -}
 
+import Internal.Api.Helpers as Helpers
 import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
@@ -120,10 +121,5 @@ When set to 1 or lower, the task will only try once.
 -}
 tryNTimes : Int -> TaskChain u a b -> TaskChain u a b
 tryNTimes n f context =
-    if n <= 1 then
-        f context
-
-    else
-        (\_ -> tryNTimes (n - 1) f context)
-            |> Task.onError
-            |> (|>) (f context)
+    f context
+        |> Helpers.retryTask (n - 1)

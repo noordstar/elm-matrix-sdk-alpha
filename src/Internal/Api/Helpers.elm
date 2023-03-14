@@ -44,10 +44,36 @@ ratelimited task =
 This task will only return an error if it went wrong on the n'th attempt.
 
 -}
-retryTask : Int -> Task x a -> Task x a
+retryTask : Int -> Task X.Error a -> Task X.Error a
 retryTask n task =
     if n <= 0 then
         task
 
     else
-        Task.onError (\_ -> retryTask (n - 1) task) task
+        Task.onError
+            (\err ->
+                let
+                    retry : Task X.Error a
+                    retry =
+                        retryTask (n - 1) task
+                in
+                case err of
+                    X.InternetException (Http.BadUrl _) ->
+                        Task.fail err
+
+                    X.InternetException _ ->
+                        retry
+
+                    X.SDKException (X.ServerReturnsBadJSON _) ->
+                        retry
+
+                    X.SDKException _ ->
+                        Task.fail err
+
+                    X.ServerException _ ->
+                        Task.fail err
+
+                    X.UnsupportedSpecVersion ->
+                        Task.fail err
+            )
+            task

@@ -39,7 +39,6 @@ input.
 -}
 type ClientError
     = ServerReturnsBadJSON String
-    | CouldntGetTimestamp
     | NotSupportedYet String
     | NoAccessToken
 
@@ -211,9 +210,8 @@ errorToString e =
         SDKException (ServerReturnsBadJSON s) ->
             ES.serverReturnsBadJSON s
 
-        SDKException CouldntGetTimestamp ->
-            ES.couldNotGetTimestamp
-
+        -- SDKException CouldntGetTimestamp ->
+        --     ES.couldNotGetTimestamp
         ServerException (M_FORBIDDEN data) ->
             ES.serverSaysForbidden data.error
 
