@@ -8,6 +8,7 @@ import Internal.Api.Chain as Chain
 import Internal.Api.Credentials as Cred exposing (Credentials)
 import Internal.Api.GetEvent.Main exposing (EventInput)
 import Internal.Api.Invite.Main exposing (InviteInput)
+import Internal.Api.JoinRoomById.Main exposing (JoinRoomByIdInput)
 import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
 import Internal.Api.SendStateKey.Main exposing (SendStateKeyInput)
 import Internal.Api.Sync.Main exposing (SyncInput)
@@ -44,6 +45,13 @@ joinedMembers : JoinedMembersInput -> Credentials -> FutureTask
 joinedMembers data cred =
     C.makeVBA cred
         |> Chain.andThen (C.joinedMembers data)
+        |> C.toTask
+
+
+joinRoomById : JoinRoomByIdInput -> Credentials -> FutureTask
+joinRoomById data cred =
+    C.makeVBA cred
+        |> Chain.andThen (C.joinRoomById data)
         |> C.toTask
 
 

@@ -4,6 +4,7 @@ import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
 import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.Invite.Main as Invite
+import Internal.Api.JoinRoomById.Main as JoinRoomById
 import Internal.Api.JoinedMembers.Main as JoinedMembers
 import Internal.Api.LoginWithUsernameAndPassword.Main as LoginWithUsernameAndPassword
 import Internal.Api.Redact.Main as Redact
@@ -25,6 +26,7 @@ type VaultUpdate
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | InviteSent Invite.InviteInput Invite.InviteOutput
     | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
+    | JoinedRoom JoinRoomById.JoinRoomByIdInput JoinRoomById.JoinRoomByIdOutput
     | LoggedInWithUsernameAndPassword LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordInput LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordOutput
     | MessageEventSent SendMessageEvent.SendMessageEventInput SendMessageEvent.SendMessageEventOutput
     | RedactedEvent Redact.RedactInput Redact.RedactOutput
@@ -147,6 +149,19 @@ joinedMembers input =
                 }
         )
         JoinedMembers.joinedMembers
+        input
+
+
+joinRoomById : JoinRoomById.JoinRoomByIdInput -> IdemChain VaultUpdate (VBA a)
+joinRoomById input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ JoinedRoom input output ]
+                }
+        )
+        JoinRoomById.joinRoomById
         input
 
 

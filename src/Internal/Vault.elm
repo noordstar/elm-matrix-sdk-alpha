@@ -111,7 +111,12 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
         InviteSent _ _ ->
             credentials
 
+        -- TODO
         JoinedMembersToRoom _ _ ->
+            credentials
+
+        -- TODO
+        JoinedRoom _ _ ->
             credentials
 
         -- TODO
@@ -126,7 +131,6 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
         StateEventSent _ _ ->
             credentials
 
-        -- TODO
         SyncUpdate input output ->
             let
                 jRooms : List IRoom.IRoom
@@ -186,7 +190,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
         UpdateVersions versions ->
             Vault { data | context = Credentials.addVersions versions context }
 
-        -- TODO: Save all info
+        -- TODO: Save ALL info
         LoggedInWithUsernameAndPassword _ output ->
             Vault { data | context = Credentials.addToken output.accessToken context }
 
