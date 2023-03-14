@@ -119,11 +119,11 @@ getUrl : ApiCall a -> String
 getUrl (ApiCall { baseUrl, attributes }) =
     UrlBuilder.crossOrigin
         baseUrl
-        (getPath attributes |> List.singleton)
+        (getPath attributes)
         (getQueryParams attributes)
 
 
-getPath : List ContextAttr -> String
+getPath : List ContextAttr -> List String
 getPath =
     List.foldl
         (\attr prior ->
@@ -138,6 +138,19 @@ getPath =
                     prior
         )
         ""
+        >> removeStartingSlashes
+        >> String.split "/"
+
+
+removeStartingSlashes : String -> String
+removeStartingSlashes url =
+    if String.startsWith "/" url then
+        url
+            |> String.dropLeft 1
+            |> removeStartingSlashes
+
+    else
+        url
 
 
 getQueryParams : List ContextAttr -> List UrlBuilder.QueryParameter
@@ -177,6 +190,7 @@ withAttributes attrs (ApiCall data) =
 accessToken : Attribute { a | accessToken : () }
 accessToken =
     Context.getAccessToken
+        >> (++) "Bearer "
         >> Http.header "Authorization"
         >> Header
 
