@@ -136,21 +136,58 @@ roomId =
 
 {-| Sends a new event to the Matrix room associated with the given `Room`.
 -}
-sendEvent : Room -> { eventType : String, content : E.Value } -> Task X.Error VaultUpdate
-sendEvent (Room { context, room }) { eventType, content } =
-    Api.sendMessageEvent
-        { content = content
-        , eventType = eventType
-        , extraTransactionNoise = "content-value:<object>"
-        , roomId = Internal.roomId room
-        }
-        context
+sendEvent : { content : E.Value, eventType : String, stateKey : Maybe String } -> Room -> Task X.Error VaultUpdate
+sendEvent { eventType, content, stateKey } (Room { context, room }) =
+    case stateKey of
+        Nothing ->
+            Api.sendMessageEvent
+                { content = content
+                , eventType = eventType
+                , extraTransactionNoise = "send-one-message"
+                , roomId = Internal.roomId room
+                }
+                context
+
+        Just s ->
+            Api.sendStateEvent
+                { content = content
+                , eventType = eventType
+                , stateKey = s
+                , roomId = Internal.roomId room
+                }
+                context
+
+
+sendEvents : List { content : E.Value, eventType : String, stateKey : Maybe String } -> Room -> List (Task X.Error VaultUpdate)
+sendEvents events (Room { context, room }) =
+    List.indexedMap Tuple.pair events
+        |> List.map
+            (\( i, { eventType, content, stateKey } ) ->
+                case stateKey of
+                    Nothing ->
+                        Api.sendMessageEvent
+                            { content = content
+                            , eventType = eventType
+                            , extraTransactionNoise = "send-message-" ++ String.fromInt i
+                            , roomId = Internal.roomId room
+                            }
+                            context
+
+                    Just s ->
+                        Api.sendStateEvent
+                            { content = content
+                            , eventType = eventType
+                            , stateKey = s
+                            , roomId = Internal.roomId room
+                            }
+                            context
+            )
 
 
 {-| Sends a new text message to the Matrix room associated with the given `Room`.
 -}
-sendMessage : Room -> String -> Task X.Error VaultUpdate
-sendMessage (Room { context, room }) text =
+sendMessage : String -> Room -> Task X.Error VaultUpdate
+sendMessage text (Room { context, room }) =
     Api.sendMessageEvent
         { content =
             E.object
@@ -162,3 +199,30 @@ sendMessage (Room { context, room }) text =
         , roomId = Internal.roomId room
         }
         context
+
+
+sendMessages : List String -> Room -> List (Task X.Error VaultUpdate)
+sendMessages pieces (Room { context, room }) =
+    pieces
+        |> List.indexedMap Tuple.pair
+        |> List.map
+            (\( i, piece ) ->
+                Api.sendMessageEvent
+                    { content =
+                        E.object
+                            [ ( "msgtype", E.string "m.text" )
+                            , ( "body", E.string piece )
+                            ]
+                    , eventType = "m.room.message"
+                    , extraTransactionNoise = "literal-message-" ++ String.fromInt i ++ ":" ++ piece
+                    , roomId = Internal.roomId room
+                    }
+                    context
+            )
+
+
+{-| Leave this room.
+-}
+leave : Room -> Task X.Error VaultUpdate
+leave ((Room { context }) as r) =
+    Api.leave { roomId = roomId r, reason = Nothing } context

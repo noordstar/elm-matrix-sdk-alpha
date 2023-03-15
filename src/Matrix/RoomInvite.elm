@@ -22,7 +22,6 @@ want to see.
 
 import Internal.Api.VaultUpdate exposing (VaultUpdate)
 import Internal.Invite as Internal
-import Internal.Room exposing (Room)
 import Internal.Tools.Exceptions as X
 import Internal.Values.RoomInvite as IR
 import Json.Encode as E
