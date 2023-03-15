@@ -6,11 +6,13 @@ It handles all communication with the homeserver.
 
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Values.Room as Room exposing (IRoom)
+import Internal.Values.RoomInvite as Invite exposing (IRoomInvite)
 
 
 type IVault
     = IVault
-        { rooms : Hashdict IRoom
+        { invites : List IRoomInvite
+        , rooms : Hashdict IRoom
         , since : Maybe String
         }
 
@@ -20,6 +22,20 @@ type IVault
 addSince : String -> IVault -> IVault
 addSince since (IVault data) =
     IVault { data | since = Just since }
+
+
+{-| Add a new invite.
+-}
+addInvite : IRoomInvite -> IVault -> IVault
+addInvite invite (IVault data) =
+    IVault { data | invites = List.append data.invites [ invite ] }
+
+
+{-| Get all the invited rooms of a user.
+-}
+getInvites : IVault -> List IRoomInvite
+getInvites (IVault data) =
+    data.invites
 
 
 {-| Get a room from the Credentials type by the room's id.
@@ -48,7 +64,8 @@ getSince (IVault { since }) =
 init : IVault
 init =
     IVault
-        { rooms = Hashdict.empty Room.roomId
+        { invites = []
+        , rooms = Hashdict.empty Room.roomId
         , since = Nothing
         }
 
@@ -59,6 +76,13 @@ This function can hence also be used as an update function for rooms.
 
 -}
 insertRoom : IRoom -> IVault -> IVault
-insertRoom room (IVault cred) =
+insertRoom room (IVault data) =
     IVault
-        { cred | rooms = Hashdict.insert room cred.rooms }
+        { data | rooms = Hashdict.insert room data.rooms }
+
+
+{-| Remove an invite. This is usually done when the invite has been accepted or rejected.
+-}
+removeInvite : String -> IVault -> IVault
+removeInvite roomId (IVault data) =
+    IVault { data | invites = List.filter (\i -> Invite.roomId i /= roomId) data.invites }
