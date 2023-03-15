@@ -13,9 +13,11 @@ import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.Task as Api
 import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
 import Internal.Event as Event
+import Internal.Invite as Invite
 import Internal.Room as Room
 import Internal.Tools.Exceptions as X
 import Internal.Values.Room as IRoom
+import Internal.Values.RoomInvite exposing (IRoomInvite)
 import Internal.Values.StateManager as StateManager
 import Internal.Values.Vault as Internal
 import Task exposing (Task)
@@ -64,6 +66,14 @@ fromLoginVault { username, password, baseUrl } =
         |> Vault
 
 
+{-| Get a user's invited rooms.
+-}
+getInvites : Vault -> List Invite.RoomInvite
+getInvites (Vault { cred, context }) =
+    Internal.getInvites cred
+        |> List.map (Invite.withCredentials context)
+
+
 {-| Get a room based on its id.
 -}
 getRoomById : String -> Vault -> Maybe Room.Room
@@ -86,50 +96,67 @@ insertRoom =
     Room.withoutCredentials >> insertInternalRoom
 
 
+{-| Join a Matrix room by its id.
+-}
+joinRoomById : String -> Vault -> Task X.Error VaultUpdate
+joinRoomById roomId (Vault { context }) =
+    Api.joinRoomById { roomId = roomId, reason = Nothing } context
+
+
 {-| Update the Vault type with new values
 -}
 updateWith : VaultUpdate -> Vault -> Vault
-updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
+updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
     case vaultUpdate of
         MultipleUpdates updates ->
-            List.foldl updateWith credentials updates
+            List.foldl updateWith vault updates
 
         GetEvent input output ->
-            case getRoomById input.roomId credentials of
+            case getRoomById input.roomId vault of
                 Just room ->
                     output
                         |> Event.initFromGetEvent
                         |> Room.addInternalEvent
                         |> (|>) room
                         |> insertRoom
-                        |> (|>) credentials
+                        |> (|>) vault
 
                 Nothing ->
-                    credentials
+                    vault
 
         -- TODO
         InviteSent _ _ ->
-            credentials
+            vault
 
         -- TODO
         JoinedMembersToRoom _ _ ->
-            credentials
+            vault
 
         -- TODO
-        JoinedRoom _ _ ->
-            credentials
+        JoinedRoom input _ ->
+            cred
+                |> Internal.removeInvite input.roomId
+                |> (\x -> { cred = x, context = context })
+                |> Vault
+
+        -- TODO
+        LeftRoom input _ ->
+            cred
+                |> Internal.removeInvite input.roomId
+                |> (\x -> { cred = x, context = context })
+                |> Vault
 
         -- TODO
         MessageEventSent _ _ ->
-            credentials
+            vault
 
         -- TODO
         RedactedEvent _ _ ->
-            credentials
+            vault
 
         -- TODO
         StateEventSent _ _ ->
-            credentials
+            vault
 
         SyncUpdate input output ->
             let
@@ -141,7 +168,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
                         |> Dict.toList
                         |> List.map
                             (\( roomId, jroom ) ->
-                                case getRoomById roomId credentials of
+                                case getRoomById roomId vault of
                                     -- Update existing room
                                     Just room ->
                                         case jroom.timeline of
@@ -176,11 +203,28 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
                                         jroom
                                             |> Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId }
                             )
+
+                invites : List IRoomInvite
+                invites =
+                    output.rooms
+                        |> Maybe.map .invite
+                        |> Maybe.withDefault Dict.empty
+                        |> Dict.toList
+                        |> List.map (Tuple.mapSecond .inviteState)
+                        |> List.map (Tuple.mapSecond (Maybe.map .events))
+                        |> List.map (Tuple.mapSecond (Maybe.withDefault []))
+                        |> List.map (\( roomId, events ) -> { roomId = roomId, events = events })
+                        |> List.map Invite.initFromStrippedStateEvent
             in
             cred
+                -- Add new since token
                 |> Internal.addSince output.nextBatch
+                -- Add joined rooms
                 |> List.foldl Internal.insertRoom
                 |> (|>) jRooms
+                -- Add invites
+                |> List.foldl Internal.addInvite
+                |> (|>) invites
                 |> (\x -> { cred = x, context = context })
                 |> Vault
 
@@ -195,7 +239,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as credentials) =
             Vault { data | context = Credentials.addToken output.accessToken context }
 
 
-{-| Synchronize credentials
+{-| Synchronize vault
 -}
 sync : Vault -> Task X.Error VaultUpdate
 sync (Vault { cred, context }) =

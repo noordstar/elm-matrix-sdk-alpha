@@ -10,6 +10,7 @@ import Internal.Api.GetEvent.Main exposing (EventInput)
 import Internal.Api.Invite.Main exposing (InviteInput)
 import Internal.Api.JoinRoomById.Main exposing (JoinRoomByIdInput)
 import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
+import Internal.Api.Leave.Main exposing (LeaveInput)
 import Internal.Api.SendStateKey.Main exposing (SendStateKeyInput)
 import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.VaultUpdate as C
@@ -52,6 +53,13 @@ joinRoomById : JoinRoomByIdInput -> Credentials -> FutureTask
 joinRoomById data cred =
     C.makeVBA cred
         |> Chain.andThen (C.joinRoomById data)
+        |> C.toTask
+
+
+leave : LeaveInput -> Credentials -> FutureTask
+leave data cred =
+    C.makeVBA cred
+        |> Chain.andThen (C.leave data)
         |> C.toTask
 
 

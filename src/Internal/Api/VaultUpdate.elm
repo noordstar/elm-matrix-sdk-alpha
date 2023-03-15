@@ -6,6 +6,7 @@ import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinRoomById.Main as JoinRoomById
 import Internal.Api.JoinedMembers.Main as JoinedMembers
+import Internal.Api.Leave.Main as Leave
 import Internal.Api.LoginWithUsernameAndPassword.Main as LoginWithUsernameAndPassword
 import Internal.Api.Redact.Main as Redact
 import Internal.Api.SendMessageEvent.Main as SendMessageEvent
@@ -27,6 +28,7 @@ type VaultUpdate
     | InviteSent Invite.InviteInput Invite.InviteOutput
     | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
     | JoinedRoom JoinRoomById.JoinRoomByIdInput JoinRoomById.JoinRoomByIdOutput
+    | LeftRoom Leave.LeaveInput Leave.LeaveOutput
     | LoggedInWithUsernameAndPassword LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordInput LoginWithUsernameAndPassword.LoginWithUsernameAndPasswordOutput
     | MessageEventSent SendMessageEvent.SendMessageEventInput SendMessageEvent.SendMessageEventOutput
     | RedactedEvent Redact.RedactInput Redact.RedactOutput
@@ -162,6 +164,19 @@ joinRoomById input =
                 }
         )
         JoinRoomById.joinRoomById
+        input
+
+
+leave : Leave.LeaveInput -> IdemChain VaultUpdate (VBA a)
+leave input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ LeftRoom input output ]
+                }
+        )
+        Leave.leave
         input
 
 
