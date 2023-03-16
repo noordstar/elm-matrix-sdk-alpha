@@ -13,6 +13,7 @@ loginWithUsernameAndPassword context input =
         { current = Api.loginWithUsernameAndPasswordV1
         , version = "v1.5"
         }
+        |> VC.sameForVersion "v1.6"
         |> VC.mostRecentFromVersionList (Context.getVersions context)
         |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
         |> (|>) input
