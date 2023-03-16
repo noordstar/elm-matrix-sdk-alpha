@@ -1,4 +1,4 @@
-module Matrix.RoomInvite exposing (..)
+module Matrix.RoomInvite exposing (RoomInvite, accept, reject, acceptWithReason, rejectWithReason)
 
 {-| Sometimes, your user will be invited to a new room!
 This module offers you a few simple handles to deal with such invites -
@@ -17,6 +17,12 @@ Sometimes, you may want to display information about the room.
 Be careful though, anyone can invite you to any room! This means that room invites
 may contain offensive, shocking or other unwanted content that the user may not
 want to see.
+
+@docs RoomInviteEvent getEvent, getAllEvents
+
+Once you have the event you want, you can explore it with the following functions.
+
+@docs sender, stateKey, contentType, content
 
 -}
 

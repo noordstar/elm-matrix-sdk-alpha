@@ -1,4 +1,9 @@
-module Matrix exposing (..)
+module Matrix exposing
+    ( Vault, fromLoginCredentials, fromAccessToken
+    , sync, VaultUpdate, updateWith
+    , getRooms, getRoomById, getInvites
+    , joinRoomById
+    )
 
 {-| This is the main module of the SDK. Here, you will find basic functions to
 interact with the API.
@@ -16,7 +21,12 @@ interact with the API.
 
 # Exploring your vault
 
-@docs getRooms, getRoomById, accessToken
+@docs getRooms, getRoomById, getInvites
+
+
+# Taking action
+
+@docs joinRoomById
 
 -}
 

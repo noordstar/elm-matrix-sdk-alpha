@@ -1,6 +1,23 @@
-module Matrix.Room exposing (..)
+module Matrix.Room exposing
+    ( Room, roomId, mostRecentEvents
+    , sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
+    )
 
-{-| -}
+{-| This module provides functions for working with Matrix rooms.
+
+
+# Room
+
+A room represents a channel of communication within a Matrix home server.
+
+@docs Room, roomId, mostRecentEvents
+
+
+# Sending events
+
+@docs sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
+
+-}
 
 import Internal.Api.VaultUpdate exposing (VaultUpdate)
 import Internal.Event as Event
