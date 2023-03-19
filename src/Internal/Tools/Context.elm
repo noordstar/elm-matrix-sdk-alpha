@@ -24,13 +24,17 @@ type Context a
         , baseUrl : String
         , sentEvent : String
         , transactionId : String
-        , usernameAndPassword : Maybe UsernameAndPassword
+        , loginParts : Maybe LoginParts
         , versions : List String
         }
 
 
-type alias UsernameAndPassword =
-    { username : String, password : String }
+type alias LoginParts =
+    { deviceId : Maybe String
+    , initialDeviceDisplayName : Maybe String
+    , password : String
+    , username : String
+    }
 
 
 type alias VB a =
@@ -54,7 +58,7 @@ init =
         , baseUrl = L.baseUrl
         , sentEvent = L.eventId
         , transactionId = L.transactionId
-        , usernameAndPassword = Nothing
+        , loginParts = Nothing
         , versions = L.versions
         }
 
@@ -89,9 +93,9 @@ getTransactionId (Context { transactionId }) =
 
 {-| Get the username and password of the user, if present.
 -}
-getUsernameAndPassword : Context { a | accessToken : () } -> Maybe UsernameAndPassword
-getUsernameAndPassword (Context { usernameAndPassword }) =
-    usernameAndPassword
+getLoginParts : Context { a | accessToken : () } -> Maybe LoginParts
+getLoginParts (Context { loginParts }) =
+    loginParts
 
 
 {-| Get the supported spec versions from the Context.
@@ -103,9 +107,9 @@ getVersions (Context { versions }) =
 
 {-| Insert an access token into the context.
 -}
-setAccessToken : { accessToken : String, usernameAndPassword : Maybe UsernameAndPassword } -> Context a -> Context { a | accessToken : () }
-setAccessToken { accessToken, usernameAndPassword } (Context data) =
-    Context { data | accessToken = accessToken, usernameAndPassword = usernameAndPassword }
+setAccessToken : { accessToken : String, loginParts : Maybe LoginParts } -> Context a -> Context { a | accessToken : () }
+setAccessToken { accessToken, loginParts } (Context data) =
+    Context { data | accessToken = accessToken, loginParts = loginParts }
 
 
 {-| Insert a base url into the context.

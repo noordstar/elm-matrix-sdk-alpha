@@ -1,4 +1,4 @@
-module Internal.Api.LoginWithUsernameAndPassword.V1.Login exposing
+module Internal.Api.LoginWithUsernameAndPassword.V2.SpecObjects exposing
     ( LoggedInResponse
     , encodeLoggedInResponse
     , loggedInResponseDecoder
@@ -10,7 +10,6 @@ Last generated at Unix time 1679075857
 
 -}
 
-import Internal.Tools.DecodeExtra exposing (opField)
 import Internal.Tools.EncodeExtra exposing (maybeObject)
 import Json.Decode as D
 import Json.Encode as E
@@ -20,6 +19,7 @@ import Json.Encode as E
 -}
 type alias LoggedInResponse =
     { accessToken : String
+    , deviceId : Maybe String
     , homeServer : String
     , refreshToken : Maybe String
     , userId : String
@@ -30,19 +30,21 @@ encodeLoggedInResponse : LoggedInResponse -> E.Value
 encodeLoggedInResponse data =
     maybeObject
         [ ( "access_token", Just <| E.string data.accessToken )
+        , ( "device_id", Maybe.map E.string data.deviceId )
         , ( "home_server", Just <| E.string data.homeServer )
-        , ( "refresh_token", Maybe.map E.string data.refreshToken )
+        , ( "refresh_token", Nothing )
         , ( "user_id", Just <| E.string data.userId )
         ]
 
 
 loggedInResponseDecoder : D.Decoder LoggedInResponse
 loggedInResponseDecoder =
-    D.map4
-        (\a b c d ->
-            { accessToken = a, homeServer = b, refreshToken = c, userId = d }
+    D.map5
+        (\a b c d e ->
+            { accessToken = a, deviceId = b, homeServer = c, refreshToken = d, userId = e }
         )
         (D.field "access_token" D.string)
+        (D.map Just <| D.field "device_id" D.string)
         (D.field "home_server" D.string)
-        (opField "refresh_token" D.string)
+        (D.succeed Nothing)
         (D.field "user_id" D.string)

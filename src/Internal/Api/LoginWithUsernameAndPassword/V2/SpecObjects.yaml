@@ -1,4 +1,4 @@
-version: V_1
+version: V_2
 name: Login
 objects:
   LoggedInResponse:
@@ -7,12 +7,15 @@ objects:
       access_token:
         type: string
         required: true
+      device_id:
+        type: string
+        required: now
       home_server:
         type: string
         required: true
       refresh_token:
         type: string
-        required: false
+        required: never
       user_id:
         type: string
         required: true

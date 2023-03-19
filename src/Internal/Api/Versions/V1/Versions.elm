@@ -6,12 +6,12 @@ module Internal.Api.Versions.V1.Versions exposing
 
 {-| Automatically generated 'Versions'
 
-Last generated at Unix time 1677064309
+Last generated at Unix time 1679075857
 
 -}
 
 import Dict exposing (Dict)
-import Internal.Tools.DecodeExtra exposing (opField, opFieldWithDefault)
+import Internal.Tools.DecodeExtra exposing (opFieldWithDefault)
 import Internal.Tools.EncodeExtra exposing (maybeObject)
 import Json.Decode as D
 import Json.Encode as E

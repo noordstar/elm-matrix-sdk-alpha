@@ -79,21 +79,25 @@ accessToken ctoken =
                 |> always
 
         AccessToken t ->
-            { contextChange = Context.setAccessToken { accessToken = t, usernameAndPassword = Nothing }
+            { contextChange = Context.setAccessToken { accessToken = t, loginParts = Nothing }
             , messages = []
             }
                 |> Chain.TaskChainPiece
                 |> Task.succeed
                 |> always
 
-        UsernameAndPassword { username, password, token } ->
+        UsernameAndPassword { username, password, token, deviceId, initialDeviceDisplayName } ->
             case token of
                 Just t ->
                     accessToken (AccessToken t)
 
                 Nothing ->
                     loginWithUsernameAndPassword
-                        { username = username, password = password }
+                        { username = username
+                        , password = password
+                        , deviceId = deviceId
+                        , initialDeviceDisplayName = initialDeviceDisplayName
+                        }
 
 
 {-| Get an event from the API.
@@ -188,7 +192,7 @@ loginWithUsernameAndPassword input =
                 { contextChange =
                     Context.setAccessToken
                         { accessToken = output.accessToken
-                        , usernameAndPassword = Just input
+                        , loginParts = Just input
                         }
                 , messages = [ LoggedInWithUsernameAndPassword input output ]
                 }

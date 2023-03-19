@@ -219,7 +219,13 @@ def main(in_file, out_file):
 
         @property
         def encoder(self):
-            if self.required or self.default is not None:
+            if self.required == 'never':
+                return 'Nothing'
+            elif self.required == 'now':
+                return (
+                    'Maybe.map ' + encapsulate(self.field.encoder) + ' data.' + self.elm_name
+                )
+            elif self.required or self.default is not None:
                 return (
                     'Just <| ' + self.field.encoder + ' data.' + self.elm_name
                 )
@@ -232,7 +238,11 @@ def main(in_file, out_file):
         
         @property
         def decoder(self):
-            if self.required:
+            if self.required == 'never':
+                return 'D.succeed Nothing'
+            elif self.required == 'now':
+                field = f'D.map Just <| D.field "{self.key}"'
+            elif self.required:
                 field = f'D.field "{self.key}"'
             elif self.default is None:
                 field = f'opField "{self.key}"'
@@ -243,7 +253,9 @@ def main(in_file, out_file):
 
         @property
         def type_definition(self):
-            if self.required or self.default is not None:
+            if self.required in ['now', 'never']:
+                return 'Maybe ' + encapsulate(self.field.type_name)
+            elif self.required or self.default is not None:
                 return self.field.type_name
             else:
                 return 'Maybe ' + encapsulate(self.field.type_name)
@@ -330,11 +342,11 @@ def main(in_file, out_file):
         if 'Dict' in content:
             write("import Dict exposing (Dict)\n")
         
-        if 'opField' in content and 'opFieldWithDefault' in content:
+        if 'opField ' in content and 'opFieldWithDefault ' in content:
             write("import Internal.Tools.DecodeExtra exposing (opField, opFieldWithDefault)\n")
-        elif 'opFieldWithDefault' in content:
-            write("import Internal.Tools.DecodeExtra exposing (opField)\n")
-        elif 'opField' in content:
+        elif 'opFieldWithDefault ' in content:
+            write("import Internal.Tools.DecodeExtra exposing (opFieldWithDefault)\n")
+        elif 'opField ' in content:
             write("import Internal.Tools.DecodeExtra exposing (opField)\n")
         
         if 'maybeObject' in content:

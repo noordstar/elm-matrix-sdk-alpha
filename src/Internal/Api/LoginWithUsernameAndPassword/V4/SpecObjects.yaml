@@ -1,0 +1,45 @@
+version: V_3
+name: Login
+objects:
+  LoggedInResponse:
+    description: Confirmation that the user successfully logged in.
+    fields:
+      access_token:
+        type: string
+        required: true
+      device_id:
+        type: string
+        required: now
+      home_server:
+        type: string
+        required: never
+      refresh_token:
+        type: string
+        required: never
+      user_id:
+        type: string
+        required: true
+      well_known:
+        type: DiscoveryInformation
+        required: false
+  DiscoveryInformation:
+    description: Information that overwrites the credential's base url and more.
+    fields:
+      m.homeserver:
+        type: HomeserverInformation
+        required: true
+      m.identity_server:
+        type: IdentityServerInformation
+        required: false
+  HomeserverInformation:
+    description: Used by clients to discover homeserver information.
+    fields:
+      base_url:
+        type: string
+        required: true
+  IdentityServerInformation:
+    description: Used by clients to discover identity server information.
+    fields:
+      base_url:
+        type: string
+        required: true

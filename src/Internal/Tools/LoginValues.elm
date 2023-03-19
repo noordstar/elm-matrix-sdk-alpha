@@ -4,7 +4,13 @@ module Internal.Tools.LoginValues exposing (..)
 type AccessToken
     = NoAccess
     | AccessToken String
-    | UsernameAndPassword { username : String, password : String, token : Maybe String }
+    | UsernameAndPassword
+        { deviceId : Maybe String
+        , initialDeviceDisplayName : Maybe String
+        , password : String
+        , token : Maybe String
+        , username : String
+        }
 
 
 defaultAccessToken : AccessToken
@@ -23,6 +29,8 @@ fromUsernameAndPassword username password =
         { username = username
         , password = password
         , token = Nothing
+        , deviceId = Nothing
+        , initialDeviceDisplayName = Nothing
         }
 
 
@@ -48,37 +56,29 @@ addToken s t =
         AccessToken _ ->
             AccessToken s
 
-        UsernameAndPassword { username, password } ->
+        UsernameAndPassword data ->
             UsernameAndPassword
-                { username = username
-                , password = password
-                , token = Just s
-                }
+                { data | token = Just s }
 
 
 addUsernameAndPassword : { username : String, password : String } -> AccessToken -> AccessToken
 addUsernameAndPassword { username, password } t =
     case t of
         NoAccess ->
-            UsernameAndPassword
-                { username = username
-                , password = password
-                , token = Nothing
-                }
+            fromUsernameAndPassword username password
 
         AccessToken a ->
             UsernameAndPassword
                 { username = username
                 , password = password
                 , token = Just a
+                , deviceId = Nothing
+                , initialDeviceDisplayName = Nothing
                 }
 
-        UsernameAndPassword { token } ->
+        UsernameAndPassword data ->
             UsernameAndPassword
-                { username = username
-                , password = password
-                , token = token
-                }
+                { data | username = username, password = password }
 
 
 removeToken : AccessToken -> AccessToken
@@ -90,9 +90,6 @@ removeToken t =
         AccessToken _ ->
             NoAccess
 
-        UsernameAndPassword { username, password } ->
+        UsernameAndPassword data ->
             UsernameAndPassword
-                { username = username
-                , password = password
-                , token = Nothing
-                }
+                { data | token = Nothing }

@@ -4,7 +4,6 @@ module Internal.Values.RoomInvite exposing (..)
 -}
 
 import Dict exposing (Dict)
-import Internal.Values.Room exposing (IRoom)
 import Json.Encode as E
 
 
