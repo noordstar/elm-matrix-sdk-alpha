@@ -3,6 +3,7 @@ module Internal.Api.VaultUpdate exposing (..)
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
 import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
+import Internal.Api.GetMessages.Main as GetMessages
 import Internal.Api.Invite.Main as Invite
 import Internal.Api.JoinRoomById.Main as JoinRoomById
 import Internal.Api.JoinedMembers.Main as JoinedMembers
@@ -25,6 +26,7 @@ type VaultUpdate
     = MultipleUpdates (List VaultUpdate)
       -- Updates as a result of API calls
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
+    | GetMessages GetMessages.GetMessagesInput GetMessages.GetMessagesOutput
     | InviteSent Invite.InviteInput Invite.InviteOutput
     | JoinedMembersToRoom JoinedMembers.JoinedMembersInput JoinedMembers.JoinedMembersOutput
     | JoinedRoom JoinRoomById.JoinRoomByIdInput JoinRoomById.JoinRoomByIdOutput
@@ -112,6 +114,21 @@ getEvent input =
                 }
         )
         GetEvent.getEvent
+        input
+
+
+{-| Get a list of messages from a room.
+-}
+getMessages : GetMessages.GetMessagesInput -> IdemChain VaultUpdate (VBA a)
+getMessages input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ GetMessages input output ]
+                }
+        )
+        GetMessages.getMessages
         input
 
 

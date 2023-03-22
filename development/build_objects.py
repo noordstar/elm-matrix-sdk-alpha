@@ -342,12 +342,16 @@ def main(in_file, out_file):
         if 'Dict' in content:
             write("import Dict exposing (Dict)\n")
         
+        module_name = 'Internal.Tools.DecodeExtra'
+        if 'map9' in content or 'map10' in content or 'map11' in content:
+            module_name = 'Internal.Tools.DecodeExtra as D'
+
         if 'opField ' in content and 'opFieldWithDefault ' in content:
-            write("import Internal.Tools.DecodeExtra exposing (opField, opFieldWithDefault)\n")
+            write(f"import {module_name} exposing (opField, opFieldWithDefault)\n")
         elif 'opFieldWithDefault ' in content:
-            write("import Internal.Tools.DecodeExtra exposing (opFieldWithDefault)\n")
+            write(f"import {module_name} exposing (opFieldWithDefault)\n")
         elif 'opField ' in content:
-            write("import Internal.Tools.DecodeExtra exposing (opField)\n")
+            write(f"import {module_name} exposing (opField)\n")
         
         if 'maybeObject' in content:
             write("import Internal.Tools.EncodeExtra exposing (maybeObject)\n")

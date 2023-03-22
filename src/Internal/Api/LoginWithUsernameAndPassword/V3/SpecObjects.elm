@@ -6,7 +6,7 @@ module Internal.Api.LoginWithUsernameAndPassword.V3.SpecObjects exposing
 
 {-| Automatically generated 'Login'
 
-Last generated at Unix time 1679075857
+Last generated at Unix time 1679486096
 
 -}
 

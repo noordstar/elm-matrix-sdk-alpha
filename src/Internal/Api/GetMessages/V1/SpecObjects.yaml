@@ -1,0 +1,46 @@
+version: v1
+name: SpecObjects
+objects:
+  MessagesResponse:
+    description: Paginated response of requested messages.
+    fields:
+      chunk:
+        type: "[RoomEvent]"
+        required: false
+        default: "[]"
+      end:
+        type: string
+        required: false
+      start:
+        type: string
+        required: true
+  RoomEvent:
+    description: An event gathered by running back through paginated chunks of a room.
+    fields:
+      origin_server_ts:
+        type: timestamp
+        required: true
+      user_id:
+        type: string
+        required: true
+      event_id:
+        type: string
+        required: true
+      content:
+        type: value
+        required: true
+      room_id:
+        type: string
+        required: true
+      type:
+        type: string
+        required: true
+      age:
+        type: int
+        required: false
+      prev_content:
+        type: value
+        required: false
+      state_key:
+        type: string
+        required: false

@@ -125,6 +125,10 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                     vault
 
         -- TODO
+        GetMessages _ _ ->
+            vault
+
+        -- TODO
         InviteSent _ _ ->
             vault
 
@@ -272,10 +276,10 @@ sync (Vault { cred, context }) =
 
                     -- TODO: The login should be different when soft_logout.
                     -- TODO: Add support for refresh token.
-                    X.ServerException (X.M_UNKNOWN_TOKEN { soft_logout }) ->
+                    X.ServerException (X.M_UNKNOWN_TOKEN _) ->
                         Api.loginMaybeSync syncInput context
 
-                    X.ServerException (X.M_MISSING_TOKEN { soft_logout }) ->
+                    X.ServerException (X.M_MISSING_TOKEN _) ->
                         Api.loginMaybeSync syncInput context
 
                     X.ServerException _ ->

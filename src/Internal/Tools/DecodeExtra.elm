@@ -1,4 +1,7 @@
-module Internal.Tools.DecodeExtra exposing (opField, opFieldWithDefault)
+module Internal.Tools.DecodeExtra exposing
+    ( opField, opFieldWithDefault
+    , map10, map11, map9
+    )
 
 {-| Module that helps while decoding JSON.
 
@@ -49,3 +52,87 @@ return a default value.
 opFieldWithDefault : String -> a -> D.Decoder a -> D.Decoder a
 opFieldWithDefault fieldName default decoder =
     opField fieldName decoder |> D.map (Maybe.withDefault default)
+
+
+map9 :
+    (a -> b -> c -> d -> e -> f -> g -> h -> i -> value)
+    -> D.Decoder a
+    -> D.Decoder b
+    -> D.Decoder c
+    -> D.Decoder d
+    -> D.Decoder e
+    -> D.Decoder f
+    -> D.Decoder g
+    -> D.Decoder h
+    -> D.Decoder i
+    -> D.Decoder value
+map9 func da db dc dd de df dg dh di =
+    D.map8
+        (\a b c d e f g ( h, i ) ->
+            func a b c d e f g h i
+        )
+        da
+        db
+        dc
+        dd
+        de
+        df
+        dg
+        (D.map2 Tuple.pair dh di)
+
+
+map10 :
+    (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> value)
+    -> D.Decoder a
+    -> D.Decoder b
+    -> D.Decoder c
+    -> D.Decoder d
+    -> D.Decoder e
+    -> D.Decoder f
+    -> D.Decoder g
+    -> D.Decoder h
+    -> D.Decoder i
+    -> D.Decoder j
+    -> D.Decoder value
+map10 func da db dc dd de df dg dh di dj =
+    D.map8
+        (\a b c d e f ( g, h ) ( i, j ) ->
+            func a b c d e f g h i j
+        )
+        da
+        db
+        dc
+        dd
+        de
+        df
+        (D.map2 Tuple.pair dg dh)
+        (D.map2 Tuple.pair di dj)
+
+
+map11 :
+    (a -> b -> c -> d -> e -> f -> g -> h -> i -> j -> k -> value)
+    -> D.Decoder a
+    -> D.Decoder b
+    -> D.Decoder c
+    -> D.Decoder d
+    -> D.Decoder e
+    -> D.Decoder f
+    -> D.Decoder g
+    -> D.Decoder h
+    -> D.Decoder i
+    -> D.Decoder j
+    -> D.Decoder k
+    -> D.Decoder value
+map11 func da db dc dd de df dg dh di dj dk =
+    D.map8
+        (\a b c d e ( f, g ) ( h, i ) ( j, k ) ->
+            func a b c d e f g h i j k
+        )
+        da
+        db
+        dc
+        dd
+        de
+        (D.map2 Tuple.pair df dg)
+        (D.map2 Tuple.pair dh di)
+        (D.map2 Tuple.pair dj dk)
