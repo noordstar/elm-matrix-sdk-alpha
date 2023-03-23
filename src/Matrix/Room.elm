@@ -1,5 +1,5 @@
 module Matrix.Room exposing
-    ( Room, roomId, mostRecentEvents
+    ( Room, roomId, mostRecentEvents, findOlderEvents
     , sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
     )
 
@@ -10,7 +10,7 @@ module Matrix.Room exposing
 
 A room represents a channel of communication within a Matrix home server.
 
-@docs Room, roomId, mostRecentEvents
+@docs Room, roomId, mostRecentEvents, findOlderEvents
 
 
 # Sending events
@@ -33,6 +33,13 @@ the Matrix API if necessary.
 -}
 type alias Room =
     Internal.Room
+
+
+{-| If you want more events as part of the most recent events, you can run this task to get more.
+-}
+findOlderEvents : { limit : Maybe Int, room : Room } -> Task X.Error VaultUpdate
+findOlderEvents { limit, room } =
+    Internal.getOlderEvents { limit = limit } room
 
 
 {-| Get the most recent events from this room.

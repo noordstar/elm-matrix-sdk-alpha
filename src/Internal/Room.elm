@@ -7,10 +7,11 @@ import Dict
 import Internal.Api.Credentials exposing (Credentials)
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Api.Task as Api
-import Internal.Api.VaultUpdate exposing (VaultUpdate)
+import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
 import Internal.Event as Event exposing (Event)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.Hashdict as Hashdict
+import Internal.Tools.SpecEnums as Enums
 import Internal.Values.Event as IEvent
 import Internal.Values.Room as Internal
 import Internal.Values.StateManager as StateManager
@@ -116,6 +117,26 @@ withCredentials context room =
 withoutCredentials : Room -> Internal.IRoom
 withoutCredentials (Room { room }) =
     room
+
+
+{-| Get older events from the Matrix API.
+-}
+getOlderEvents : { limit : Maybe Int } -> Room -> Task X.Error VaultUpdate
+getOlderEvents { limit } (Room { context, room }) =
+    case Internal.latestGap room of
+        Nothing ->
+            Task.succeed (MultipleUpdates [])
+
+        Just { from, to } ->
+            Api.getMessages
+                { direction = Enums.ReverseChronological
+                , filter = Nothing
+                , from = Just to
+                , limit = limit
+                , roomId = Internal.roomId room
+                , to = from
+                }
+                context
 
 
 {-| Get the most recent events.

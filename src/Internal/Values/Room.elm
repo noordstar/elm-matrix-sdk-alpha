@@ -59,11 +59,28 @@ getStateEvent data (IRoom room) =
         |> StateManager.getStateEvent data
 
 
-{-| Get the room's id.
+{-| Insert a chunk of events into a room.
 -}
-roomId : IRoom -> String
-roomId (IRoom room) =
-    room.roomId
+insertEvents :
+    { events : List IEvent
+    , nextBatch : String
+    , prevBatch : Maybe String
+    , stateDelta : Maybe StateManager
+    }
+    -> IRoom
+    -> IRoom
+insertEvents data (IRoom ({ timeline } as room)) =
+    IRoom
+        { room | timeline = Timeline.insertEvents data timeline }
+        |> List.foldl addEvent
+        |> (|>) data.events
+
+
+{-| Get the latest gap.
+-}
+latestGap : IRoom -> Maybe { from : Maybe String, to : String }
+latestGap (IRoom room) =
+    Timeline.latestGap room.timeline
 
 
 {-| Get the most recent events.
@@ -71,3 +88,10 @@ roomId (IRoom room) =
 mostRecentEvents : IRoom -> List IEvent
 mostRecentEvents (IRoom room) =
     Timeline.mostRecentEvents room.timeline
+
+
+{-| Get the room's id.
+-}
+roomId : IRoom -> String
+roomId (IRoom room) =
+    room.roomId

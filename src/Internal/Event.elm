@@ -10,6 +10,7 @@ resend other events or forward them elsewhere.
 import Internal.Api.Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
+import Internal.Api.GetMessages.V4.SpecObjects as GetMessagesSO
 import Internal.Api.Sync.V2.SpecObjects as SyncSO
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
@@ -56,6 +57,32 @@ initFromGetEvent output =
                         { age = data.age
                         , prevContent = data.prevContent
                         , redactedBecause = Maybe.map initFromGetEvent data.redactedBecause
+                        , transactionId = data.transactionId
+                        }
+                    )
+        }
+
+
+{-| Create an internal event type from an API endpoint event object.
+This function is placed in this file to respect file hierarchy and avoid circular imports.
+-}
+initFromGetMessages : GetMessagesSO.ClientEvent -> Internal.IEvent
+initFromGetMessages output =
+    Internal.init
+        { content = output.content
+        , eventId = output.eventId
+        , originServerTs = output.originServerTs
+        , roomId = output.roomId
+        , sender = output.sender
+        , stateKey = output.stateKey
+        , contentType = output.contentType
+        , unsigned =
+            output.unsigned
+                |> Maybe.map
+                    (\(GetMessagesSO.UnsignedData data) ->
+                        { age = data.age
+                        , prevContent = data.prevContent
+                        , redactedBecause = Maybe.map initFromGetMessages data.redactedBecause
                         , transactionId = data.transactionId
                         }
                     )

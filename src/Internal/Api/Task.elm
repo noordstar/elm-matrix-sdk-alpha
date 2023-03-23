@@ -7,6 +7,7 @@ import Hash
 import Internal.Api.Chain as Chain
 import Internal.Api.Credentials as Cred exposing (Credentials)
 import Internal.Api.GetEvent.Main exposing (EventInput)
+import Internal.Api.GetMessages.Main exposing (GetMessagesInput)
 import Internal.Api.Invite.Main exposing (InviteInput)
 import Internal.Api.JoinRoomById.Main exposing (JoinRoomByIdInput)
 import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
@@ -32,6 +33,13 @@ getEvent { eventId, roomId } cred =
     C.makeVBA cred
         |> Chain.andThen (C.withSentEvent eventId)
         |> Chain.andThen (C.getEvent { roomId = roomId })
+        |> C.toTask
+
+
+getMessages : GetMessagesInput -> Credentials -> FutureTask
+getMessages data cred =
+    C.makeVBA cred
+        |> Chain.andThen (C.getMessages data)
         |> C.toTask
 
 

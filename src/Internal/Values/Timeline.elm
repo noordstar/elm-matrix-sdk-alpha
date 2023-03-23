@@ -92,61 +92,117 @@ newFromEvents { events, nextBatch, prevBatch, stateDelta } =
 insertEvents :
     { events : List IEvent
     , nextBatch : String
-    , prevBatch : String
+    , prevBatch : Maybe String
     , stateDelta : Maybe StateManager
     }
     -> Timeline
     -> Timeline
 insertEvents ({ events, nextBatch, prevBatch, stateDelta } as data) (Timeline t) =
     Timeline
-        (if t.nextBatch == prevBatch then
-            { t
-                | events = t.events ++ events
-                , nextBatch = nextBatch
-            }
-
-         else if nextBatch == t.prevBatch then
-            case t.previous of
-                Gap (Timeline prevT) ->
-                    if prevT.nextBatch == prevBatch then
-                        { events = prevT.events ++ events ++ t.events
-                        , nextBatch = t.nextBatch
-                        , prevBatch = prevT.prevBatch
-                        , stateAtStart = prevT.stateAtStart
-                        , previous = prevT.previous
-                        }
-
-                    else
+        (case prevBatch of
+            -- No prevbatch suggests the start of the timeline.
+            -- This means that we must recurse until we've hit the bottom,
+            -- and then mark the bottom of the timeline.
+            Nothing ->
+                case t.previous of
+                    Gap prevT ->
                         { t
-                            | events = events ++ t.events
-                            , prevBatch = prevBatch
-                            , stateAtStart =
-                                stateDelta
-                                    |> Maybe.withDefault StateManager.empty
+                            | previous =
+                                prevT
+                                    |> insertEvents data
+                                    |> Gap
                         }
 
-                _ ->
-                    { t
-                        | events = events ++ t.events
-                        , prevBatch = prevBatch
-                        , stateAtStart =
-                            stateDelta
-                                |> Maybe.withDefault StateManager.empty
-                    }
+                    _ ->
+                        if nextBatch == t.prevBatch then
+                            { t | previous = StartOfTimeline, events = events ++ t.events, stateAtStart = StateManager.empty }
 
-         else
-            case t.previous of
-                Gap prevT ->
-                    { t
-                        | previous =
-                            prevT
-                                |> insertEvents data
-                                |> Gap
-                    }
+                        else
+                            { t | previous = Gap <| newFromEvents data }
 
-                _ ->
-                    t
+            -- If there is a prevbatch, it is not the start of the timeline
+            -- and could be located anywhere.
+            -- Starting at the front, look for a way to match it with the existing timeline.
+            Just p ->
+                -- Piece connects to the front of the timeline.
+                if t.nextBatch == p then
+                    { t
+                        | events = t.events ++ events
+                        , nextBatch = nextBatch
+                    }
+                    -- Piece connects to the back of the timeline.
+
+                else if nextBatch == t.prevBatch then
+                    case t.previous of
+                        Gap (Timeline prevT) ->
+                            -- Piece also connects to the timeline in the back,
+                            -- allowing the two timelines to merge.
+                            if prevT.nextBatch == p then
+                                { events = prevT.events ++ events ++ t.events
+                                , nextBatch = t.nextBatch
+                                , prevBatch = prevT.prevBatch
+                                , stateAtStart = prevT.stateAtStart
+                                , previous = prevT.previous
+                                }
+
+                            else
+                                { t
+                                    | events = events ++ t.events
+                                    , prevBatch = p
+                                    , stateAtStart =
+                                        stateDelta
+                                            |> Maybe.withDefault StateManager.empty
+                                }
+
+                        Endless _ ->
+                            { t
+                                | events = events ++ t.events
+                                , prevBatch = p
+                                , stateAtStart =
+                                    stateDelta
+                                        |> Maybe.withDefault StateManager.empty
+                                , previous = Endless p
+                            }
+
+                        _ ->
+                            { t
+                                | events = events ++ t.events
+                                , prevBatch = p
+                                , stateAtStart =
+                                    stateDelta
+                                        |> Maybe.withDefault StateManager.empty
+                            }
+                    -- Piece doesn't connect to this piece of the timeline.
+                    -- Consequently, look for previous parts of the timeline to see if it connects.
+
+                else
+                    case t.previous of
+                        Gap prevT ->
+                            { t
+                                | previous =
+                                    prevT
+                                        |> insertEvents data
+                                        |> Gap
+                            }
+
+                        _ ->
+                            t
         )
+
+
+{-| Get the width of the latest gap. This data is usually accessed when trying to get more messages.
+-}
+latestGap : Timeline -> Maybe { from : Maybe String, to : String }
+latestGap (Timeline t) =
+    case t.previous of
+        StartOfTimeline ->
+            Nothing
+
+        Endless prevBatch ->
+            Just { from = Nothing, to = prevBatch }
+
+        Gap (Timeline pt) ->
+            Just { from = Just pt.nextBatch, to = t.prevBatch }
 
 
 {-| Get the longest uninterrupted length of most recent events.

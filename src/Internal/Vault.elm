@@ -16,6 +16,7 @@ import Internal.Event as Event
 import Internal.Invite as Invite
 import Internal.Room as Room
 import Internal.Tools.Exceptions as X
+import Internal.Tools.SpecEnums as Enums
 import Internal.Values.Room as IRoom
 import Internal.Values.RoomInvite exposing (IRoomInvite)
 import Internal.Values.StateManager as StateManager
@@ -125,8 +126,62 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                     vault
 
         -- TODO
-        GetMessages _ _ ->
-            vault
+        GetMessages input output ->
+            let
+                prevBatch : Maybe String
+                prevBatch =
+                    case input.direction of
+                        Enums.Chronological ->
+                            Just output.start
+
+                        Enums.ReverseChronological ->
+                            case output.end of
+                                Just end ->
+                                    Just end
+
+                                Nothing ->
+                                    input.to
+
+                nextBatch : Maybe String
+                nextBatch =
+                    case input.direction of
+                        Enums.Chronological ->
+                            case output.end of
+                                Just end ->
+                                    Just end
+
+                                Nothing ->
+                                    input.to
+
+                        Enums.ReverseChronological ->
+                            Just output.start
+            in
+            case ( getRoomById input.roomId vault, nextBatch ) of
+                ( Just room, Just nb ) ->
+                    room
+                        |> Room.withoutCredentials
+                        |> IRoom.insertEvents
+                            { events =
+                                output.chunk
+                                    |> List.map Event.initFromGetMessages
+                                    |> (\x ->
+                                            case input.direction of
+                                                Enums.Chronological ->
+                                                    x
+
+                                                Enums.ReverseChronological ->
+                                                    List.reverse x
+                                       )
+                            , prevBatch = prevBatch
+                            , nextBatch = nb
+                            , stateDelta = Just <| StateManager.fromEventList (List.map Event.initFromGetMessages output.state)
+                            }
+                        |> Internal.insertRoom
+                        |> (|>) cred
+                        |> (\v -> Vault { cred = v, context = context })
+
+                _ ->
+                    vault
 
         -- TODO
         InviteSent _ _ ->
