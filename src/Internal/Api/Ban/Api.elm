@@ -1,8 +1,7 @@
 module Internal.Api.Ban.Api exposing (..)
 
-import Internal.Api.GetEvent.V1.SpecObjects as SO1
 import Internal.Api.Request as R
-import Internal.Tools.Context as Context exposing (Context)
+import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
 import Task exposing (Task)

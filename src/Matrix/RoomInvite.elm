@@ -1,6 +1,6 @@
 module Matrix.RoomInvite exposing
     ( RoomInvite, accept, reject, acceptWithReason, rejectWithReason
-    , roomId
+    , roomId, RoomInviteEvent, getEvent, getAllEvents
     , sender, stateKey, contentType, content
     )
 

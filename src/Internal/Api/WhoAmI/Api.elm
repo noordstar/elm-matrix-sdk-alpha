@@ -6,7 +6,6 @@ import Internal.Api.WhoAmI.V2.SpecObjects as SO2
 import Internal.Api.WhoAmI.V3.SpecObjects as SO3
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
-import Internal.Tools.SpecEnums as Enums
 import Task exposing (Task)
 
 
