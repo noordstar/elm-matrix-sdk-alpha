@@ -91,17 +91,17 @@ accessToken ctoken =
                 |> Chain.TaskChainPiece
                 |> Task.succeed
                 |> always
-                |> Chain.andThen
-                    (toChain
-                        (\output ->
-                            Chain.TaskChainPiece
-                                { contextChange = identity
-                                , messages = [ UpdateRawAccessToken t output ]
-                                }
-                        )
-                        WhoAmI.whoAmI
-                        ()
-                    )
+                -- |> Chain.andThen
+                --     (toChain
+                --         (\output ->
+                --             Chain.TaskChainPiece
+                --                 { contextChange = identity
+                --                 , messages = [ UpdateRawAccessToken t output ]
+                --                 }
+                --         )
+                --         WhoAmI.whoAmI
+                --         ()
+                --     )
 
         DetailedAccessToken data ->
             { contextChange = Context.setAccessToken { accessToken = data.accessToken, loginParts = Nothing }

@@ -13102,10 +13102,6 @@ var $noordstar$elm_matrix_sdk$Internal$Api$Credentials$accessToken = function (_
 	return access;
 };
 var $noordstar$elm_matrix_sdk$Internal$Tools$Exceptions$NoAccessToken = {$: 'NoAccessToken'};
-var $noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$UpdateRawAccessToken = F2(
-	function (a, b) {
-		return {$: 'UpdateRawAccessToken', a: a, b: b};
-	});
 var $noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$LoggedInWithUsernameAndPassword = F2(
 	function (a, b) {
 		return {$: 'LoggedInWithUsernameAndPassword', a: a, b: b};
@@ -13610,144 +13606,6 @@ var $noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$loginWithUsernameAndPassw
 		$noordstar$elm_matrix_sdk$Internal$Api$LoginWithUsernameAndPassword$Main$loginWithUsernameAndPassword,
 		input);
 };
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V2$Upcast$upcastWhoAmIResponse = function (old) {
-	return {deviceId: $elm$core$Maybe$Nothing, userId: old.userId};
-};
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V3$Upcast$upcastWhoAmIResponse = function (old) {
-	return {deviceId: old.deviceId, isGuest: false, userId: old.userId};
-};
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V1$SpecObjects$whoAmIResponseDecoder = A2(
-	$elm$json$Json$Decode$map,
-	function (a) {
-		return {userId: a};
-	},
-	A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$string));
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Api$whoAmIV1 = function (_v0) {
-	return A2(
-		$elm$core$Basics$composeR,
-		A2($noordstar$elm_matrix_sdk$Internal$Api$Request$callApi, 'GET', '/_matrix/client/r0/account/whoami'),
-		A2(
-			$elm$core$Basics$composeR,
-			$noordstar$elm_matrix_sdk$Internal$Api$Request$withAttributes(
-				_List_fromArray(
-					[$noordstar$elm_matrix_sdk$Internal$Api$Request$accessToken])),
-			$noordstar$elm_matrix_sdk$Internal$Api$Request$toTask($noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V1$SpecObjects$whoAmIResponseDecoder)));
-};
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V2$SpecObjects$whoAmIResponseDecoder = A3(
-	$elm$json$Json$Decode$map2,
-	F2(
-		function (a, b) {
-			return {deviceId: a, userId: b};
-		}),
-	A2($noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opField, 'device_id', $elm$json$Json$Decode$string),
-	A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$string));
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Api$whoAmIV2 = function (_v0) {
-	return A2(
-		$elm$core$Basics$composeR,
-		A2($noordstar$elm_matrix_sdk$Internal$Api$Request$callApi, 'GET', '/_matrix/client/v3/account/whoami'),
-		A2(
-			$elm$core$Basics$composeR,
-			$noordstar$elm_matrix_sdk$Internal$Api$Request$withAttributes(
-				_List_fromArray(
-					[$noordstar$elm_matrix_sdk$Internal$Api$Request$accessToken])),
-			$noordstar$elm_matrix_sdk$Internal$Api$Request$toTask($noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V2$SpecObjects$whoAmIResponseDecoder)));
-};
-var $noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opFieldWithDefault = F3(
-	function (fieldName, _default, decoder) {
-		return A2(
-			$elm$json$Json$Decode$map,
-			$elm$core$Maybe$withDefault(_default),
-			A2($noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opField, fieldName, decoder));
-	});
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V3$SpecObjects$whoAmIResponseDecoder = A4(
-	$elm$json$Json$Decode$map3,
-	F3(
-		function (a, b, c) {
-			return {deviceId: a, isGuest: b, userId: c};
-		}),
-	A2($noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opField, 'device_id', $elm$json$Json$Decode$string),
-	A3($noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opFieldWithDefault, 'is_guest', false, $elm$json$Json$Decode$bool),
-	A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$string));
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Api$whoAmIV3 = function (_v0) {
-	return A2(
-		$elm$core$Basics$composeR,
-		A2($noordstar$elm_matrix_sdk$Internal$Api$Request$callApi, 'GET', '/_matrix/client/v3/account/whoami'),
-		A2(
-			$elm$core$Basics$composeR,
-			$noordstar$elm_matrix_sdk$Internal$Api$Request$withAttributes(
-				_List_fromArray(
-					[$noordstar$elm_matrix_sdk$Internal$Api$Request$accessToken])),
-			$noordstar$elm_matrix_sdk$Internal$Api$Request$toTask($noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V3$SpecObjects$whoAmIResponseDecoder)));
-};
-var $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Main$whoAmI = F2(
-	function (context, input) {
-		return A3(
-			$elm$core$Basics$apR,
-			A2(
-				$elm$core$Maybe$withDefault,
-				$elm$core$Basics$always(
-					$elm$core$Basics$always(
-						$elm$core$Task$fail($noordstar$elm_matrix_sdk$Internal$Tools$Exceptions$UnsupportedSpecVersion))),
-				A2(
-					$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$mostRecentFromVersionList,
-					$noordstar$elm_matrix_sdk$Internal$Tools$Context$getVersions(context),
-					A2(
-						$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-						'v1.6',
-						A2(
-							$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-							'v1.5',
-							A2(
-								$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-								'v1.4',
-								A2(
-									$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-									'v1.3',
-									A2(
-										$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$addMiddleLayer,
-										{
-											current: $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Api$whoAmIV3,
-											downcast: $elm$core$Basics$identity,
-											upcast: F2(
-												function (f, c) {
-													return A2(
-														$elm$core$Task$map,
-														$noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V3$Upcast$upcastWhoAmIResponse,
-														f(c));
-												}),
-											version: 'v1.2'
-										},
-										A2(
-											$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$addMiddleLayer,
-											{
-												current: $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Api$whoAmIV2,
-												downcast: $elm$core$Basics$identity,
-												upcast: F2(
-													function (f, c) {
-														return A2(
-															$elm$core$Task$map,
-															$noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$V2$Upcast$upcastWhoAmIResponse,
-															f(c));
-													}),
-												version: 'v1.1'
-											},
-											A2(
-												$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-												'r0.6.1',
-												A2(
-													$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-													'r0.6.0',
-													A2(
-														$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-														'r0.5.0',
-														A2(
-															$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$sameForVersion,
-															'r0.4.0',
-															$noordstar$elm_matrix_sdk$Internal$Tools$VersionControl$withBottomLayer(
-																{current: $noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Api$whoAmIV1, version: 'r0.3.0'}))))))))))))),
-			$elm$core$Basics$apR(input),
-			context);
-	});
 var $noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$accessToken = function (ctoken) {
 	switch (ctoken.$) {
 		case 'NoAccess':
@@ -13756,30 +13614,14 @@ var $noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$accessToken = function (c
 					$noordstar$elm_matrix_sdk$Internal$Tools$Exceptions$SDKException($noordstar$elm_matrix_sdk$Internal$Tools$Exceptions$NoAccessToken)));
 		case 'RawAccessToken':
 			var t = ctoken.a;
-			return A2(
-				$noordstar$elm_matrix_sdk$Internal$Api$Chain$andThen,
-				A3(
-					$noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$toChain,
-					function (output) {
-						return $noordstar$elm_matrix_sdk$Internal$Api$Chain$TaskChainPiece(
-							{
-								contextChange: $elm$core$Basics$identity,
-								messages: _List_fromArray(
-									[
-										A2($noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$UpdateRawAccessToken, t, output)
-									])
-							});
-					},
-					$noordstar$elm_matrix_sdk$Internal$Api$WhoAmI$Main$whoAmI,
-					_Utils_Tuple0),
-				$elm$core$Basics$always(
-					$elm$core$Task$succeed(
-						$noordstar$elm_matrix_sdk$Internal$Api$Chain$TaskChainPiece(
-							{
-								contextChange: $noordstar$elm_matrix_sdk$Internal$Tools$Context$setAccessToken(
-									{accessToken: t, loginParts: $elm$core$Maybe$Nothing}),
-								messages: _List_Nil
-							}))));
+			return $elm$core$Basics$always(
+				$elm$core$Task$succeed(
+					$noordstar$elm_matrix_sdk$Internal$Api$Chain$TaskChainPiece(
+						{
+							contextChange: $noordstar$elm_matrix_sdk$Internal$Tools$Context$setAccessToken(
+								{accessToken: t, loginParts: $elm$core$Maybe$Nothing}),
+							messages: _List_Nil
+						})));
 		case 'DetailedAccessToken':
 			var data = ctoken.a;
 			return $elm$core$Basics$always(
@@ -13823,6 +13665,13 @@ var $noordstar$elm_matrix_sdk$Internal$Api$Credentials$versions = function (_v0)
 var $noordstar$elm_matrix_sdk$Internal$Api$VaultUpdate$UpdateVersions = function (a) {
 	return {$: 'UpdateVersions', a: a};
 };
+var $noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opFieldWithDefault = F3(
+	function (fieldName, _default, decoder) {
+		return A2(
+			$elm$json$Json$Decode$map,
+			$elm$core$Maybe$withDefault(_default),
+			A2($noordstar$elm_matrix_sdk$Internal$Tools$DecodeExtra$opField, fieldName, decoder));
+	});
 var $noordstar$elm_matrix_sdk$Internal$Api$Versions$V1$Versions$versionsDecoder = A3(
 	$elm$json$Json$Decode$map2,
 	F2(
@@ -16533,7 +16382,7 @@ var $noordstar$elm_matrix_sdk$Demos$Cookie$view = function (model) {
 												case 1:
 													return user + ' sent you a cookie! 🍪';
 												case 2:
-													return user + ' sent you a cookie! 🍪🍪';
+													return user + ' sent you 2 cookies! 🍪🍪';
 												default:
 													return user + (' sent you ' + ($elm$core$String$fromInt(amount) + ' cookies! 🍪🍪🍪'));
 											}
