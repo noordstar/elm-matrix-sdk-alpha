@@ -112,6 +112,10 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
         MultipleUpdates updates ->
             List.foldl updateWith vault updates
 
+        -- TODO
+        BanUser input output ->
+            vault
+
         GetEvent input output ->
             case getRoomById input.roomId vault of
                 Just room ->
@@ -289,6 +293,10 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
 
         UpdateAccessToken token ->
             Vault { data | context = Credentials.addToken token context }
+
+        -- TODO
+        UpdateRawAccessToken token output ->
+            vault
 
         UpdateVersions versions ->
             Vault { data | context = Credentials.addVersions versions context }
