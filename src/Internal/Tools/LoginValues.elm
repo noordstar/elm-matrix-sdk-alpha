@@ -3,7 +3,12 @@ module Internal.Tools.LoginValues exposing (..)
 
 type AccessToken
     = NoAccess
-    | AccessToken String
+    | RawAccessToken String
+    | DetailedAccessToken
+        { accessToken : String
+        , userId : String
+        , deviceId : String
+        }
     | UsernameAndPassword
         { deviceId : Maybe String
         , initialDeviceDisplayName : Maybe String
@@ -20,7 +25,7 @@ defaultAccessToken =
 
 fromAccessToken : String -> AccessToken
 fromAccessToken =
-    AccessToken
+    RawAccessToken
 
 
 fromUsernameAndPassword : String -> String -> AccessToken
@@ -40,8 +45,11 @@ getToken t =
         NoAccess ->
             Nothing
 
-        AccessToken token ->
+        RawAccessToken token ->
             Just token
+
+        DetailedAccessToken { accessToken } ->
+            Just accessToken
 
         UsernameAndPassword { token } ->
             token
@@ -51,10 +59,13 @@ addToken : String -> AccessToken -> AccessToken
 addToken s t =
     case t of
         NoAccess ->
-            AccessToken s
+            RawAccessToken s
 
-        AccessToken _ ->
-            AccessToken s
+        RawAccessToken _ ->
+            RawAccessToken s
+
+        DetailedAccessToken _ ->
+            RawAccessToken s
 
         UsernameAndPassword data ->
             UsernameAndPassword
@@ -67,12 +78,21 @@ addUsernameAndPassword { username, password } t =
         NoAccess ->
             fromUsernameAndPassword username password
 
-        AccessToken a ->
+        RawAccessToken a ->
             UsernameAndPassword
                 { username = username
                 , password = password
                 , token = Just a
                 , deviceId = Nothing
+                , initialDeviceDisplayName = Nothing
+                }
+
+        DetailedAccessToken { accessToken, deviceId } ->
+            UsernameAndPassword
+                { username = username
+                , password = password
+                , token = Just accessToken
+                , deviceId = Just deviceId
                 , initialDeviceDisplayName = Nothing
                 }
 
@@ -87,7 +107,10 @@ removeToken t =
         NoAccess ->
             NoAccess
 
-        AccessToken _ ->
+        RawAccessToken _ ->
+            NoAccess
+
+        DetailedAccessToken _ ->
             NoAccess
 
         UsernameAndPassword data ->

@@ -16,6 +16,7 @@ import Internal.Api.SendStateKey.Main as SendStateKey
 import Internal.Api.Sync.Main as Sync
 import Internal.Api.Versions.Main as Versions
 import Internal.Api.Versions.V1.Versions as V
+import Internal.Api.WhoAmI.Main as WhoAmI
 import Internal.Tools.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
@@ -41,6 +42,7 @@ type VaultUpdate
       -- Updates as a result of getting data early
     | UpdateAccessToken String
     | UpdateVersions V.Versions
+    | UpdateRawAccessToken String WhoAmI.WhoAmIOutput
 
 
 type alias FutureTask =
@@ -82,8 +84,27 @@ accessToken ctoken =
                 |> Task.fail
                 |> always
 
-        AccessToken t ->
+        RawAccessToken t ->
             { contextChange = Context.setAccessToken { accessToken = t, loginParts = Nothing }
+            , messages = []
+            }
+                |> Chain.TaskChainPiece
+                |> Task.succeed
+                |> always
+                |> Chain.andThen
+                    (toChain
+                        (\output ->
+                            Chain.TaskChainPiece
+                                { contextChange = identity
+                                , messages = [ UpdateRawAccessToken t output ]
+                                }
+                        )
+                        WhoAmI.whoAmI
+                        ()
+                    )
+
+        DetailedAccessToken data ->
+            { contextChange = Context.setAccessToken { accessToken = data.accessToken, loginParts = Nothing }
             , messages = []
             }
                 |> Chain.TaskChainPiece
@@ -93,7 +114,12 @@ accessToken ctoken =
         UsernameAndPassword { username, password, token, deviceId, initialDeviceDisplayName } ->
             case token of
                 Just t ->
-                    accessToken (AccessToken t)
+                    { contextChange = Context.setAccessToken { accessToken = t, loginParts = Nothing }
+                    , messages = []
+                    }
+                        |> Chain.TaskChainPiece
+                        |> Task.succeed
+                        |> always
 
                 Nothing ->
                     loginWithUsernameAndPassword
