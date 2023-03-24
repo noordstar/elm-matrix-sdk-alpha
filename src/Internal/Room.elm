@@ -119,6 +119,14 @@ withoutCredentials (Room { room }) =
     room
 
 
+{-| Get a given state event.
+-}
+getStateEvent : { eventType : String, stateKey : String } -> Room -> Maybe Event
+getStateEvent data (Room { room, context }) =
+    Internal.getStateEvent data room
+        |> Maybe.map (Event.withCredentials context)
+
+
 {-| Get older events from the Matrix API.
 -}
 getOlderEvents : { limit : Maybe Int } -> Room -> Task X.Error VaultUpdate

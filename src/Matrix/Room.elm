@@ -1,5 +1,6 @@
 module Matrix.Room exposing
     ( Room, roomId, mostRecentEvents, findOlderEvents
+    , stateEvent
     , sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
     )
 
@@ -11,6 +12,11 @@ module Matrix.Room exposing
 A room represents a channel of communication within a Matrix home server.
 
 @docs Room, roomId, mostRecentEvents, findOlderEvents
+
+
+# Exploring a room
+
+@docs stateEvent
 
 
 # Sending events
@@ -47,6 +53,13 @@ findOlderEvents { limit, room } =
 mostRecentEvents : Room -> List Event.Event
 mostRecentEvents =
     Internal.mostRecentEvents
+
+
+{-| Get a state event in the room.
+-}
+stateEvent : { eventType : String, stateKey : String } -> Room -> Maybe Event.Event
+stateEvent =
+    Internal.getStateEvent
 
 
 {-| Get the Matrix room id of a room.
