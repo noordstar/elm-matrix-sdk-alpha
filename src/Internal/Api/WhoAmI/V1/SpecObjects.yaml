@@ -1,0 +1,9 @@
+version: v1
+name: SpecObjects
+objects:
+  WhoAmIResponse:
+    description: Response telling the user to whom their access token belongs.
+    fields:
+      user_id:
+        type: string
+        required: true
