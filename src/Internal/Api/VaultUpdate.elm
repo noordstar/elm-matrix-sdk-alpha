@@ -1,5 +1,6 @@
 module Internal.Api.VaultUpdate exposing (..)
 
+import Internal.Api.Ban.Main as Ban
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
 import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
@@ -25,6 +26,7 @@ import Time
 type VaultUpdate
     = MultipleUpdates (List VaultUpdate)
       -- Updates as a result of API calls
+    | BanUser Ban.BanInput Ban.BanOutput
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | GetMessages GetMessages.GetMessagesInput GetMessages.GetMessagesOutput
     | InviteSent Invite.InviteInput Invite.InviteOutput
@@ -100,6 +102,21 @@ accessToken ctoken =
                         , deviceId = deviceId
                         , initialDeviceDisplayName = initialDeviceDisplayName
                         }
+
+
+{-| Ban a user from a room.
+-}
+ban : Ban.BanInput -> IdemChain VaultUpdate (VBA a)
+ban input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ BanUser input output ]
+                }
+        )
+        Ban.ban
+        input
 
 
 {-| Get an event from the API.
