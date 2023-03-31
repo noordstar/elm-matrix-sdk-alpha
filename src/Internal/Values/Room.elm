@@ -19,6 +19,13 @@ type IRoom
         }
 
 
+{-| Get given account data from the room.
+-}
+accountData : String -> IRoom -> Maybe E.Value
+accountData key (IRoom room) =
+    Dict.get key room.accountData
+
+
 {-| Add the data of a single event to the hashdict of events.
 -}
 addEvent : IEvent -> IRoom -> IRoom

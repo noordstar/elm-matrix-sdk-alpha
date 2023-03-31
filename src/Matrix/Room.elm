@@ -1,6 +1,6 @@
 module Matrix.Room exposing
     ( Room, roomId, mostRecentEvents, findOlderEvents
-    , stateEvent
+    , stateEvent, accountData
     , sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
     )
 
@@ -16,7 +16,7 @@ A room represents a channel of communication within a Matrix home server.
 
 # Exploring a room
 
-@docs stateEvent
+@docs stateEvent, accountData
 
 
 # Sending events
@@ -39,6 +39,13 @@ the Matrix API if necessary.
 -}
 type alias Room =
     Internal.Room
+
+
+{-| Get any account data value that the user stores regarding this room.
+-}
+accountData : String -> Room -> Maybe E.Value
+accountData =
+    Internal.accountData
 
 
 {-| If you want more events as part of the most recent events, you can run this task to get more.
