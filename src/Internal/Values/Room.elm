@@ -66,6 +66,13 @@ getStateEvent data (IRoom room) =
         |> StateManager.getStateEvent data
 
 
+{-| Insert account data into the room.
+-}
+insertAccountData : Dict String E.Value -> IRoom -> IRoom
+insertAccountData newdata (IRoom room) =
+    IRoom { room | accountData = Dict.union newdata room.accountData }
+
+
 {-| Insert a chunk of events into a room.
 -}
 insertEvents :

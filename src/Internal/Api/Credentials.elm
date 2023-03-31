@@ -52,6 +52,13 @@ addVersions vs (Credentials data) =
     Credentials { data | vs = Just vs }
 
 
+{-| Add whoami to the `Credentials` type to identify the user.
+-}
+addWhoAmI : { a | userId : String, deviceId : Maybe String } -> Credentials -> Credentials
+addWhoAmI whoami (Credentials ({ access } as data)) =
+    Credentials { data | access = Login.addWhoAmI whoami access }
+
+
 {-| Retrieves the base url from a given `Credentials` value.
 -}
 baseUrl : Credentials -> String

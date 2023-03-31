@@ -7,7 +7,7 @@ type AccessToken
     | DetailedAccessToken
         { accessToken : String
         , userId : String
-        , deviceId : String
+        , deviceId : Maybe String
         }
     | UsernameAndPassword
         { deviceId : Maybe String
@@ -15,6 +15,7 @@ type AccessToken
         , password : String
         , token : Maybe String
         , username : String
+        , userId : Maybe String
         }
 
 
@@ -36,6 +37,7 @@ fromUsernameAndPassword username password =
         , token = Nothing
         , deviceId = Nothing
         , initialDeviceDisplayName = Nothing
+        , userId = Nothing
         }
 
 
@@ -85,20 +87,42 @@ addUsernameAndPassword { username, password } t =
                 , token = Just a
                 , deviceId = Nothing
                 , initialDeviceDisplayName = Nothing
+                , userId = Nothing
                 }
 
-        DetailedAccessToken { accessToken, deviceId } ->
+        DetailedAccessToken { accessToken, deviceId, userId } ->
             UsernameAndPassword
                 { username = username
                 , password = password
                 , token = Just accessToken
-                , deviceId = Just deviceId
+                , deviceId = deviceId
                 , initialDeviceDisplayName = Nothing
+                , userId = Just userId
                 }
 
         UsernameAndPassword data ->
             UsernameAndPassword
                 { data | username = username, password = password }
+
+
+addWhoAmI : { a | deviceId : Maybe String, userId : String } -> AccessToken -> AccessToken
+addWhoAmI { deviceId, userId } t =
+    case t of
+        NoAccess ->
+            NoAccess
+
+        RawAccessToken a ->
+            DetailedAccessToken
+                { accessToken = a
+                , deviceId = deviceId
+                , userId = userId
+                }
+
+        DetailedAccessToken data ->
+            DetailedAccessToken { data | deviceId = deviceId, userId = userId }
+
+        UsernameAndPassword data ->
+            UsernameAndPassword { data | deviceId = deviceId, userId = Just userId }
 
 
 removeToken : AccessToken -> AccessToken

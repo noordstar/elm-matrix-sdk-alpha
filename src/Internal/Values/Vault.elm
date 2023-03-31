@@ -4,17 +4,27 @@ module Internal.Values.Vault exposing (..)
 It handles all communication with the homeserver.
 -}
 
+import Dict exposing (Dict)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Values.Room as Room exposing (IRoom)
 import Internal.Values.RoomInvite as Invite exposing (IRoomInvite)
+import Json.Encode as E
 
 
 type IVault
     = IVault
-        { invites : List IRoomInvite
+        { accountData : Dict String E.Value
+        , invites : List IRoomInvite
         , rooms : Hashdict IRoom
         , since : Maybe String
         }
+
+
+{-| Get an account data value.
+-}
+accountData : String -> IVault -> Maybe E.Value
+accountData key (IVault data) =
+    Dict.get key data.accountData
 
 
 {-| Add a new `since` token to sync from.
@@ -64,10 +74,28 @@ getSince (IVault { since }) =
 init : IVault
 init =
     IVault
-        { invites = []
+        { accountData = Dict.empty
+        , invites = []
         , rooms = Hashdict.empty Room.roomId
         , since = Nothing
         }
+
+
+insertAccountData : { content : E.Value, eventType : String, roomId : Maybe String } -> IVault -> IVault
+insertAccountData { content, eventType, roomId } (IVault data) =
+    case roomId of
+        Just rId ->
+            getRoomById rId (IVault data)
+                |> Maybe.map
+                    (Room.insertAccountData (Dict.singleton eventType content)
+                        >> Hashdict.insert
+                        >> (|>) data.rooms
+                        >> (\rooms -> IVault { data | rooms = rooms })
+                    )
+                |> Maybe.withDefault (IVault data)
+
+        Nothing ->
+            IVault { data | accountData = Dict.insert eventType content data.accountData }
 
 
 {-| Add a new room to the Credentials type. If a room with this id already exists, it is overwritten.

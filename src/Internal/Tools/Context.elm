@@ -22,9 +22,10 @@ type Context a
     = Context
         { accessToken : String
         , baseUrl : String
+        , loginParts : Maybe LoginParts
         , sentEvent : String
         , transactionId : String
-        , loginParts : Maybe LoginParts
+        , userId : String
         , versions : List String
         }
 
@@ -56,9 +57,10 @@ init =
     Context
         { accessToken = L.accessToken
         , baseUrl = L.baseUrl
+        , loginParts = Nothing
         , sentEvent = L.eventId
         , transactionId = L.transactionId
-        , loginParts = Nothing
+        , userId = L.sender
         , versions = L.versions
         }
 
@@ -77,6 +79,13 @@ getBaseUrl (Context { baseUrl }) =
     baseUrl
 
 
+{-| Get the username and password of the user, if present.
+-}
+getLoginParts : Context { a | accessToken : () } -> Maybe LoginParts
+getLoginParts (Context { loginParts }) =
+    loginParts
+
+
 {-| Get the event that has been sent to the API recently.
 -}
 getSentEvent : Context { a | sentEvent : () } -> String
@@ -91,11 +100,11 @@ getTransactionId (Context { transactionId }) =
     transactionId
 
 
-{-| Get the username and password of the user, if present.
+{-| Get the user id from the Context.
 -}
-getLoginParts : Context { a | accessToken : () } -> Maybe LoginParts
-getLoginParts (Context { loginParts }) =
-    loginParts
+getUserId : Context { a | userId : () } -> String
+getUserId (Context { userId }) =
+    userId
 
 
 {-| Get the supported spec versions from the Context.
@@ -133,7 +142,14 @@ setTransactionId transactionId (Context data) =
     Context { data | transactionId = transactionId }
 
 
-{-| Insert a transaction id into the context.
+{-| Insert a user id into the context.
+-}
+setUserId : String -> Context a -> Context { a | userId : () }
+setUserId userId (Context data) =
+    Context { data | userId = userId }
+
+
+{-| Insert versions into the context.
 -}
 setVersions : List String -> Context a -> Context { a | versions : () }
 setVersions versions (Context data) =
@@ -165,6 +181,13 @@ removeSentEvent (Context data) =
 -}
 removeTransactionId : Context { a | transactionId : () } -> Context a
 removeTransactionId (Context data) =
+    Context data
+
+
+{-| Remove the user id from the Context
+-}
+removeUserId : Context { a | userId : () } -> Context a
+removeUserId (Context data) =
     Context data
 
 

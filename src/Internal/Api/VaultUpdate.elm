@@ -13,6 +13,7 @@ import Internal.Api.LoginWithUsernameAndPassword.Main as LoginWithUsernameAndPas
 import Internal.Api.Redact.Main as Redact
 import Internal.Api.SendMessageEvent.Main as SendMessageEvent
 import Internal.Api.SendStateKey.Main as SendStateKey
+import Internal.Api.SetAccountData.Main as SetAccountData
 import Internal.Api.Sync.Main as Sync
 import Internal.Api.Versions.Main as Versions
 import Internal.Api.Versions.V1.Versions as V
@@ -27,6 +28,7 @@ import Time
 type VaultUpdate
     = MultipleUpdates (List VaultUpdate)
       -- Updates as a result of API calls
+    | AccountDataSet SetAccountData.SetAccountInput SetAccountData.SetAccountOutput
     | BanUser Ban.BanInput Ban.BanOutput
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | GetMessages GetMessages.GetMessagesInput GetMessages.GetMessagesOutput
@@ -42,7 +44,7 @@ type VaultUpdate
       -- Updates as a result of getting data early
     | UpdateAccessToken String
     | UpdateVersions V.Versions
-    | UpdateRawAccessToken String WhoAmI.WhoAmIOutput
+    | UpdateWhoAmI WhoAmI.WhoAmIOutput
 
 
 type alias FutureTask =
@@ -75,7 +77,7 @@ toTask =
 
 {-| Get a functional access token.
 -}
-accessToken : AccessToken -> TaskChain VaultUpdate (VB a) (VBA a)
+accessToken : AccessToken -> TaskChain VaultUpdate (VB a) (VBA { a | userId : () })
 accessToken ctoken =
     case ctoken of
         NoAccess ->
@@ -91,27 +93,19 @@ accessToken ctoken =
                 |> Chain.TaskChainPiece
                 |> Task.succeed
                 |> always
-                -- |> Chain.andThen
-                --     (toChain
-                --         (\output ->
-                --             Chain.TaskChainPiece
-                --                 { contextChange = identity
-                --                 , messages = [ UpdateRawAccessToken t output ]
-                --                 }
-                --         )
-                --         WhoAmI.whoAmI
-                --         ()
-                --     )
+                |> Chain.andThen getWhoAmI
 
         DetailedAccessToken data ->
-            { contextChange = Context.setAccessToken { accessToken = data.accessToken, loginParts = Nothing }
+            { contextChange =
+                Context.setAccessToken { accessToken = data.accessToken, loginParts = Nothing }
+                    >> Context.setUserId data.userId
             , messages = []
             }
                 |> Chain.TaskChainPiece
                 |> Task.succeed
                 |> always
 
-        UsernameAndPassword { username, password, token, deviceId, initialDeviceDisplayName } ->
+        UsernameAndPassword { username, password, token, deviceId, initialDeviceDisplayName, userId } ->
             case token of
                 Just t ->
                     { contextChange = Context.setAccessToken { accessToken = t, loginParts = Nothing }
@@ -120,6 +114,7 @@ accessToken ctoken =
                         |> Chain.TaskChainPiece
                         |> Task.succeed
                         |> always
+                        |> Chain.andThen (whoAmI userId)
 
                 Nothing ->
                     loginWithUsernameAndPassword
@@ -128,6 +123,14 @@ accessToken ctoken =
                         , deviceId = deviceId
                         , initialDeviceDisplayName = initialDeviceDisplayName
                         }
+                        |> Chain.andThen
+                            (case userId of
+                                Just user ->
+                                    getWhoAmI |> Chain.otherwise (withUserId user)
+
+                                Nothing ->
+                                    getWhoAmI
+                            )
 
 
 {-| Ban a user from a room.
@@ -187,6 +190,21 @@ getVersions =
                 }
         )
         (\context _ -> Versions.getVersions context)
+        ()
+
+
+{-| Get a whoami to gain someone's identity.
+-}
+getWhoAmI : TaskChain VaultUpdate (VBA a) (VBA { a | userId : () })
+getWhoAmI =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = Context.setUserId output.userId
+                , messages = [ UpdateWhoAmI output ]
+                }
+        )
+        WhoAmI.whoAmI
         ()
 
 
@@ -273,7 +291,7 @@ makeVB cred =
 
 {-| Make a VBA-context based chain.
 -}
-makeVBA : Credentials -> TaskChain VaultUpdate {} (VBA {})
+makeVBA : Credentials -> TaskChain VaultUpdate {} (VBA { userId : () })
 makeVBA cred =
     cred
         |> makeVB
@@ -282,7 +300,7 @@ makeVBA cred =
 
 {-| Make a VBAT-context based chain.
 -}
-makeVBAT : (Int -> String) -> Credentials -> TaskChain VaultUpdate {} (VBAT {})
+makeVBAT : (Int -> String) -> Credentials -> TaskChain VaultUpdate {} (VBAT { userId : () })
 makeVBAT toString cred =
     cred
         |> makeVBA
@@ -337,6 +355,19 @@ sendStateEvent input =
         |> Chain.tryNTimes 5
 
 
+setAccountData : SetAccountData.SetAccountInput -> IdemChain VaultUpdate (VBA { a | userId : () })
+setAccountData input =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = identity
+                , messages = [ AccountDataSet input output ]
+                }
+        )
+        SetAccountData.setAccountData
+        input
+
+
 {-| Sync the latest updates.
 -}
 sync : Sync.SyncInput -> IdemChain VaultUpdate (VBA a)
@@ -364,6 +395,18 @@ versions mVersions =
             getVersions
     )
         |> Chain.tryNTimes 5
+
+
+{-| Create a task to get a user's identity, if it is unknown.
+-}
+whoAmI : Maybe String -> TaskChain VaultUpdate (VBA a) (VBA { a | userId : () })
+whoAmI muserId =
+    case muserId of
+        Just userId ->
+            withUserId userId
+
+        Nothing ->
+            getWhoAmI
 
 
 {-| Create a task that insert the base URL into the context.
@@ -409,9 +452,19 @@ withTransactionId toString =
         |> always
 
 
+withUserId : String -> TaskChain VaultUpdate a { a | userId : () }
+withUserId userId =
+    { contextChange = Context.setUserId userId
+    , messages = []
+    }
+        |> Chain.TaskChainPiece
+        |> Task.succeed
+        |> always
+
+
 {-| Create a task that inserts versions into the context.
 -}
-withVersions : V.Versions -> TaskChain VaultUpdate { a | baseUrl : () } (VB a)
+withVersions : V.Versions -> TaskChain VaultUpdate a { a | versions : () }
 withVersions vs =
     { contextChange = Context.setVersions vs.versions
     , messages = []

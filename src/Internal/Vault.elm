@@ -21,6 +21,7 @@ import Internal.Values.Room as IRoom
 import Internal.Values.RoomInvite exposing (IRoomInvite)
 import Internal.Values.StateManager as StateManager
 import Internal.Values.Vault as Internal
+import Json.Encode as E
 import Task exposing (Task)
 
 
@@ -65,6 +66,13 @@ fromLoginVault { username, password, baseUrl } =
                 { cred = Internal.init, context = context }
            )
         |> Vault
+
+
+{-| Get personal account data linked to an account.
+-}
+accountData : String -> Vault -> Maybe E.Value
+accountData key (Vault { cred }) =
+    Internal.accountData key cred
 
 
 {-| Get a user's invited rooms.
@@ -113,7 +121,11 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
             List.foldl updateWith vault updates
 
         -- TODO
-        BanUser input output ->
+        AccountDataSet input () ->
+            vault
+
+        -- TODO
+        BanUser input () ->
             vault
 
         GetEvent input output ->
@@ -223,6 +235,13 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
 
         SyncUpdate input output ->
             let
+                accData : List { content : E.Value, eventType : String, roomId : Maybe String }
+                accData =
+                    output.accountData
+                        |> Maybe.map .events
+                        |> Maybe.withDefault []
+                        |> List.map (\{ content, eventType } -> { content = content, eventType = eventType, roomId = Nothing })
+
                 jRooms : List IRoom.IRoom
                 jRooms =
                     output.rooms
@@ -234,7 +253,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                                 case getRoomById roomId vault of
                                     -- Update existing room
                                     Just room ->
-                                        case jroom.timeline of
+                                        (case jroom.timeline of
                                             Just timeline ->
                                                 room
                                                     |> Room.withoutCredentials
@@ -260,6 +279,15 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
 
                                             Nothing ->
                                                 Room.withoutCredentials room
+                                        )
+                                            |> (\r ->
+                                                    jroom.accountData
+                                                        |> Maybe.map .events
+                                                        |> Maybe.withDefault []
+                                                        |> List.map (\{ content, eventType } -> ( eventType, content ))
+                                                        |> Dict.fromList
+                                                        |> (\a -> IRoom.insertAccountData a r)
+                                               )
 
                                     -- Add new room
                                     Nothing ->
@@ -280,6 +308,8 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                         |> List.map Invite.initFromStrippedStateEvent
             in
             cred
+                -- Add global account data
+                |> (\c -> List.foldl Internal.insertAccountData c accData)
                 -- Add new since token
                 |> Internal.addSince output.nextBatch
                 -- Add joined rooms
@@ -294,12 +324,11 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
         UpdateAccessToken token ->
             Vault { data | context = Credentials.addToken token context }
 
-        -- TODO
-        UpdateRawAccessToken token output ->
-            vault
-
         UpdateVersions versions ->
             Vault { data | context = Credentials.addVersions versions context }
+
+        UpdateWhoAmI whoami ->
+            Vault { data | context = Credentials.addWhoAmI whoami context }
 
         -- TODO: Save ALL info
         LoggedInWithUsernameAndPassword _ output ->
