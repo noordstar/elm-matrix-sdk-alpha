@@ -19,24 +19,24 @@ type RoomInviteEvent
         { content : E.Value
         , sender : String
         , stateKey : String
-        , contentType : String
+        , eventType : String
         }
 
 
-init : { roomId : String, events : List { content : E.Value, sender : String, stateKey : String, contentType : String } } -> IRoomInvite
+init : { roomId : String, events : List { content : E.Value, sender : String, stateKey : String, eventType : String } } -> IRoomInvite
 init data =
     data.events
         |> List.map
             (\event ->
-                ( ( event.contentType, event.stateKey ), RoomInviteEvent event )
+                ( ( event.eventType, event.stateKey ), RoomInviteEvent event )
             )
         |> Dict.fromList
         |> (\e -> IRoomInvite { roomId = data.roomId, events = e })
 
 
-getEvent : { contentType : String, stateKey : String } -> IRoomInvite -> Maybe RoomInviteEvent
+getEvent : { eventType : String, stateKey : String } -> IRoomInvite -> Maybe RoomInviteEvent
 getEvent data (IRoomInvite { events }) =
-    Dict.get ( data.contentType, data.stateKey ) events
+    Dict.get ( data.eventType, data.stateKey ) events
 
 
 getAllEvents : IRoomInvite -> List RoomInviteEvent
@@ -64,6 +64,6 @@ stateKey (RoomInviteEvent data) =
     data.stateKey
 
 
-contentType : RoomInviteEvent -> String
-contentType (RoomInviteEvent data) =
-    data.contentType
+eventType : RoomInviteEvent -> String
+eventType (RoomInviteEvent data) =
+    data.eventType

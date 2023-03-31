@@ -49,7 +49,7 @@ initFromGetEvent output =
         , roomId = output.roomId
         , sender = output.sender
         , stateKey = output.stateKey
-        , contentType = output.contentType
+        , eventType = output.eventType
         , unsigned =
             output.unsigned
                 |> Maybe.map
@@ -75,7 +75,7 @@ initFromGetMessages output =
         , roomId = output.roomId
         , sender = output.sender
         , stateKey = output.stateKey
-        , contentType = output.contentType
+        , eventType = output.eventType
         , unsigned =
             output.unsigned
                 |> Maybe.map
@@ -101,7 +101,7 @@ initFromClientEventWithoutRoomId rId output =
         , roomId = rId
         , sender = output.sender
         , stateKey = output.stateKey
-        , contentType = output.contentType
+        , eventType = output.eventType
         , unsigned =
             output.unsigned
                 |> Maybe.map
@@ -156,9 +156,9 @@ stateKey =
     withoutCredentials >> Internal.stateKey
 
 
-contentType : Event -> String
-contentType =
-    withoutCredentials >> Internal.contentType
+eventType : Event -> String
+eventType =
+    withoutCredentials >> Internal.eventType
 
 
 age : Event -> Maybe Int

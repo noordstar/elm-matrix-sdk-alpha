@@ -12,7 +12,7 @@ addEvent : IEvent -> StateManager -> StateManager
 addEvent event oldManager =
     case Event.stateKey event of
         Just key ->
-            Dict.insert ( Event.contentType event, key ) event oldManager
+            Dict.insert ( Event.eventType event, key ) event oldManager
 
         Nothing ->
             oldManager

@@ -44,7 +44,7 @@ initFromJoinedRoom data jroom =
             jroom.accountData
                 |> Maybe.map .events
                 |> Maybe.withDefault []
-                |> List.map (\{ contentType, content } -> ( contentType, content ))
+                |> List.map (\{ eventType, content } -> ( eventType, content ))
                 |> Dict.fromList
         , ephemeral =
             jroom.ephemeral
@@ -84,6 +84,11 @@ initFromJoinedRoom data jroom =
                         }
                     )
         }
+
+
+accountData : String -> Room -> Maybe E.Value
+accountData key =
+    withoutCredentials >> Internal.accountData key
 
 
 {-| Adds an internal event to the `Room`. An internal event is a custom event

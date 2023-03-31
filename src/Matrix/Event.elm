@@ -1,5 +1,5 @@
 module Matrix.Event exposing
-    ( Event, contentType, content, stateKey
+    ( Event, eventType, content, stateKey
     , eventId, roomId, sender, originServerTs, redactedBecause
     )
 
@@ -8,7 +8,7 @@ module Matrix.Event exposing
 
 # Event
 
-@docs Event, contentType, content, stateKey
+@docs Event, eventType, content, stateKey
 
 
 ## Getting metadata
@@ -75,9 +75,9 @@ stateKey =
 
 {-| This is the type of the event's content. For example, `m.room.message` indicates that it was a message.
 -}
-contentType : Event -> String
-contentType =
-    Internal.contentType
+eventType : Event -> String
+eventType =
+    Internal.eventType
 
 
 {-| In case the event was redacted, this event will point you to the event that redacted it.

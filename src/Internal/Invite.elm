@@ -39,7 +39,7 @@ withoutCredentials (RoomInvite { invite }) =
     invite
 
 
-getEvent : { contentType : String, stateKey : String } -> RoomInvite -> Maybe Internal.RoomInviteEvent
+getEvent : { eventType : String, stateKey : String } -> RoomInvite -> Maybe Internal.RoomInviteEvent
 getEvent data =
     withoutCredentials >> Internal.getEvent data
 

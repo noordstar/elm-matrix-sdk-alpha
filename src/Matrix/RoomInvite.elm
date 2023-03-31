@@ -1,7 +1,7 @@
 module Matrix.RoomInvite exposing
     ( RoomInvite, accept, reject, acceptWithReason, rejectWithReason
     , roomId, RoomInviteEvent, getEvent, getAllEvents
-    , sender, stateKey, contentType, content
+    , sender, stateKey, eventType, content
     )
 
 {-| Sometimes, your user will be invited to a new room!
@@ -26,7 +26,7 @@ want to see.
 
 Once you have the event you want, you can explore it with the following functions.
 
-@docs sender, stateKey, contentType, content
+@docs sender, stateKey, eventType, content
 
 -}
 
@@ -105,9 +105,9 @@ content =
 
 {-| Get the event's content type.
 -}
-contentType : RoomInviteEvent -> String
-contentType =
-    IR.contentType
+eventType : RoomInviteEvent -> String
+eventType =
+    IR.eventType
 
 
 {-| Get the event's state key.
@@ -119,7 +119,7 @@ stateKey =
 
 {-| Get a specific event with a specific event content type and state key, if it exists.
 -}
-getEvent : { contentType : String, stateKey : String } -> RoomInvite -> Maybe RoomInviteEvent
+getEvent : { eventType : String, stateKey : String } -> RoomInvite -> Maybe RoomInviteEvent
 getEvent data invite =
     invite
         |> Internal.withoutCredentials

@@ -12,7 +12,7 @@ type IEvent
         , roomId : String
         , sender : String
         , stateKey : Maybe String
-        , contentType : String
+        , eventType : String
         , unsigned :
             Maybe
                 { age : Maybe Int
@@ -30,7 +30,7 @@ init :
     , roomId : String
     , sender : String
     , stateKey : Maybe String
-    , contentType : String
+    , eventType : String
     , unsigned :
         Maybe
             { age : Maybe Int
@@ -78,9 +78,9 @@ stateKey (IEvent e) =
     e.stateKey
 
 
-contentType : IEvent -> String
-contentType (IEvent e) =
-    e.contentType
+eventType : IEvent -> String
+eventType (IEvent e) =
+    e.eventType
 
 
 age : IEvent -> Maybe Int
@@ -102,7 +102,7 @@ transactionId (IEvent e) =
 
 
 type BlindEvent
-    = BlindEvent { contentType : String, content : E.Value }
+    = BlindEvent { eventType : String, content : E.Value }
 
 
 blindContent : BlindEvent -> E.Value
@@ -112,4 +112,4 @@ blindContent (BlindEvent be) =
 
 blindContentType : BlindEvent -> String
 blindContentType (BlindEvent be) =
-    be.contentType
+    be.eventType

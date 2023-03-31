@@ -22,7 +22,7 @@ upcastRoomEvent old =
     , roomId = old.roomId
     , sender = old.sender
     , stateKey = old.stateKey
-    , contentType = old.contentType
+    , eventType = old.eventType
     , unsigned = Maybe.map (upcastUnsigned old.prevContent) old.unsigned
     }
 
@@ -35,7 +35,7 @@ upcastRoomStateEvent old =
     , roomId = old.roomId
     , sender = old.sender
     , stateKey = Just old.stateKey
-    , contentType = old.contentType
+    , eventType = old.eventType
     , unsigned = Maybe.map (upcastUnsigned old.prevContent) old.unsigned
     }
 

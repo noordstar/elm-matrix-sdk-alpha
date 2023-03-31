@@ -15,7 +15,7 @@ module Internal.Api.GetMessages.V3.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1679486096
+Last generated at Unix time 1680263083
 
 -}
 
@@ -68,7 +68,7 @@ type alias RoomEvent =
     , roomId : String
     , sender : String
     , stateKey : Maybe String
-    , contentType : String
+    , eventType : String
     , unsigned : Maybe UnsignedData
     }
 
@@ -83,7 +83,7 @@ encodeRoomEvent data =
         , ( "room_id", Just <| E.string data.roomId )
         , ( "sender", Just <| E.string data.sender )
         , ( "state_key", Maybe.map E.string data.stateKey )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         , ( "unsigned", Maybe.map encodeUnsignedData data.unsigned )
         ]
 
@@ -92,7 +92,7 @@ roomEventDecoder : D.Decoder RoomEvent
 roomEventDecoder =
     D.map9
         (\a b c d e f g h i ->
-            { content = a, eventId = b, originServerTs = c, prevContent = d, roomId = e, sender = f, stateKey = g, contentType = h, unsigned = i }
+            { content = a, eventId = b, originServerTs = c, prevContent = d, roomId = e, sender = f, stateKey = g, eventType = h, unsigned = i }
         )
         (D.field "content" D.value)
         (D.field "event_id" D.string)
@@ -115,7 +115,7 @@ type alias RoomStateEvent =
     , roomId : String
     , sender : String
     , stateKey : String
-    , contentType : String
+    , eventType : String
     , unsigned : Maybe UnsignedData
     }
 
@@ -130,7 +130,7 @@ encodeRoomStateEvent data =
         , ( "room_id", Just <| E.string data.roomId )
         , ( "sender", Just <| E.string data.sender )
         , ( "state_key", Just <| E.string data.stateKey )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         , ( "unsigned", Maybe.map encodeUnsignedData data.unsigned )
         ]
 
@@ -139,7 +139,7 @@ roomStateEventDecoder : D.Decoder RoomStateEvent
 roomStateEventDecoder =
     D.map9
         (\a b c d e f g h i ->
-            { content = a, eventId = b, originServerTs = c, prevContent = d, roomId = e, sender = f, stateKey = g, contentType = h, unsigned = i }
+            { content = a, eventId = b, originServerTs = c, prevContent = d, roomId = e, sender = f, stateKey = g, eventType = h, unsigned = i }
         )
         (D.field "content" D.value)
         (D.field "event_id" D.string)

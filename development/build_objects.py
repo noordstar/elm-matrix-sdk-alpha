@@ -179,6 +179,8 @@ def main(in_file, out_file):
             return DictField(str_to_field(value[1:-1]))
         if value in OBJECTS:
             return SpecObjectField(value)
+        if value.startswith('Enums.'):
+            return EnumField(value[len('Enums.'):])
         
         match value:
             case 'value':
@@ -210,7 +212,7 @@ def main(in_file, out_file):
         @property
         def elm_name(self):
             if self.key == 'type':
-                return 'contentType'
+                return 'eventType'
             else:
                 words = self.key.lower().replace('_', ' ').replace('.', ' ').split(' ')
                 words = ''.join([w.capitalize() for w in words])

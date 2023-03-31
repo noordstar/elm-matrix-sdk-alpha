@@ -12,7 +12,7 @@ module Internal.Api.GetMessages.V4.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1679486096
+Last generated at Unix time 1680263084
 
 -}
 
@@ -32,7 +32,7 @@ type alias ClientEvent =
     , roomId : String
     , sender : String
     , stateKey : Maybe String
-    , contentType : String
+    , eventType : String
     , unsigned : Maybe UnsignedData
     }
 
@@ -46,7 +46,7 @@ encodeClientEvent data =
         , ( "room_id", Just <| E.string data.roomId )
         , ( "sender", Just <| E.string data.sender )
         , ( "state_key", Maybe.map E.string data.stateKey )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         , ( "unsigned", Maybe.map encodeUnsignedData data.unsigned )
         ]
 
@@ -55,7 +55,7 @@ clientEventDecoder : D.Decoder ClientEvent
 clientEventDecoder =
     D.map8
         (\a b c d e f g h ->
-            { content = a, eventId = b, originServerTs = c, roomId = d, sender = e, stateKey = f, contentType = g, unsigned = h }
+            { content = a, eventId = b, originServerTs = c, roomId = d, sender = e, stateKey = f, eventType = g, unsigned = h }
         )
         (D.field "content" D.value)
         (D.field "event_id" D.string)

@@ -139,7 +139,7 @@ cookies =
                 |> Matrix.Room.mostRecentEvents
                 |> List.filterMap
                     (\event ->
-                        case Matrix.Event.contentType event of
+                        case Matrix.Event.eventType event of
                             "me.noordstar.demo_cookie" ->
                                 Just (Matrix.Event.sender event)
 

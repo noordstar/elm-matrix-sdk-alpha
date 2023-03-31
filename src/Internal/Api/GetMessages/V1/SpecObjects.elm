@@ -9,7 +9,7 @@ module Internal.Api.GetMessages.V1.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1679486096
+Last generated at Unix time 1680263083
 
 -}
 
@@ -59,7 +59,7 @@ type alias RoomEvent =
     , prevContent : Maybe E.Value
     , roomId : String
     , stateKey : Maybe String
-    , contentType : String
+    , eventType : String
     , userId : String
     }
 
@@ -74,7 +74,7 @@ encodeRoomEvent data =
         , ( "prev_content", data.prevContent )
         , ( "room_id", Just <| E.string data.roomId )
         , ( "state_key", Maybe.map E.string data.stateKey )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         , ( "user_id", Just <| E.string data.userId )
         ]
 
@@ -83,7 +83,7 @@ roomEventDecoder : D.Decoder RoomEvent
 roomEventDecoder =
     D.map9
         (\a b c d e f g h i ->
-            { age = a, content = b, eventId = c, originServerTs = d, prevContent = e, roomId = f, stateKey = g, contentType = h, userId = i }
+            { age = a, content = b, eventId = c, originServerTs = d, prevContent = e, roomId = f, stateKey = g, eventType = h, userId = i }
         )
         (opField "age" D.int)
         (D.field "content" D.value)

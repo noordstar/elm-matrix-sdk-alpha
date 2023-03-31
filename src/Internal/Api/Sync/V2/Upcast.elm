@@ -47,7 +47,7 @@ upcastClientEventWithoutRoomId old =
     , originServerTs = old.originServerTs
     , sender = old.sender
     , stateKey = old.stateKey
-    , contentType = old.contentType
+    , eventType = old.eventType
     , unsigned = Maybe.map upcastUnsigned old.unsigned
     }
 

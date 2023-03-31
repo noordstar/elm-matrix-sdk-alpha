@@ -60,7 +60,7 @@ module Internal.Api.Sync.V1.SpecObjects exposing
 
 {-| Automatically generated 'SpecObjects'
 
-Last generated at Unix time 1676625734
+Last generated at Unix time 1680263084
 
 -}
 
@@ -103,7 +103,7 @@ type alias ClientEventWithoutRoomId =
     , originServerTs : Timestamp
     , sender : String
     , stateKey : Maybe String
-    , contentType : String
+    , eventType : String
     , unsigned : Maybe UnsignedData
     }
 
@@ -116,7 +116,7 @@ encodeClientEventWithoutRoomId data =
         , ( "origin_server_ts", Just <| encodeTimestamp data.originServerTs )
         , ( "sender", Just <| E.string data.sender )
         , ( "state_key", Maybe.map E.string data.stateKey )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         , ( "unsigned", Maybe.map encodeUnsignedData data.unsigned )
         ]
 
@@ -125,7 +125,7 @@ clientEventWithoutRoomIdDecoder : D.Decoder ClientEventWithoutRoomId
 clientEventWithoutRoomIdDecoder =
     D.map7
         (\a b c d e f g ->
-            { content = a, eventId = b, originServerTs = c, sender = d, stateKey = e, contentType = f, unsigned = g }
+            { content = a, eventId = b, originServerTs = c, sender = d, stateKey = e, eventType = f, unsigned = g }
         )
         (D.field "content" D.value)
         (D.field "event_id" D.string)
@@ -163,7 +163,7 @@ ephemeralDecoder =
 -}
 type alias Event =
     { content : E.Value
-    , contentType : String
+    , eventType : String
     }
 
 
@@ -171,7 +171,7 @@ encodeEvent : Event -> E.Value
 encodeEvent data =
     maybeObject
         [ ( "content", Just <| data.content )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         ]
 
 
@@ -179,7 +179,7 @@ eventDecoder : D.Decoder Event
 eventDecoder =
     D.map2
         (\a b ->
-            { content = a, contentType = b }
+            { content = a, eventType = b }
         )
         (D.field "content" D.value)
         (D.field "type" D.string)
@@ -457,7 +457,7 @@ type alias StrippedStateEvent =
     { content : E.Value
     , sender : String
     , stateKey : String
-    , contentType : String
+    , eventType : String
     }
 
 
@@ -467,7 +467,7 @@ encodeStrippedStateEvent data =
         [ ( "content", Just <| data.content )
         , ( "sender", Just <| E.string data.sender )
         , ( "state_key", Just <| E.string data.stateKey )
-        , ( "type", Just <| E.string data.contentType )
+        , ( "type", Just <| E.string data.eventType )
         ]
 
 
@@ -475,7 +475,7 @@ strippedStateEventDecoder : D.Decoder StrippedStateEvent
 strippedStateEventDecoder =
     D.map4
         (\a b c d ->
-            { content = a, sender = b, stateKey = c, contentType = d }
+            { content = a, sender = b, stateKey = c, eventType = d }
         )
         (D.field "content" D.value)
         (D.field "sender" D.string)
