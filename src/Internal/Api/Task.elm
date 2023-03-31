@@ -13,6 +13,7 @@ import Internal.Api.JoinRoomById.Main exposing (JoinRoomByIdInput)
 import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
 import Internal.Api.Leave.Main exposing (LeaveInput)
 import Internal.Api.SendStateKey.Main exposing (SendStateKeyInput)
+import Internal.Api.SetAccountData.Main exposing (SetAccountInput)
 import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.VaultUpdate as C
 import Json.Encode as E
@@ -134,6 +135,13 @@ sendStateEvent data cred =
         |> Chain.andThen (C.sendStateEvent data)
         |> Chain.andThen
             (Chain.maybe <| C.getEvent { roomId = data.roomId })
+        |> C.toTask
+
+
+setAccountData : SetAccountInput -> Credentials -> FutureTask
+setAccountData data cred =
+    C.makeVBA cred
+        |> Chain.andThen (C.setAccountData data)
         |> C.toTask
 
 

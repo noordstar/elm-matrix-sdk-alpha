@@ -2,6 +2,7 @@ module Matrix.Room exposing
     ( Room, roomId, mostRecentEvents, findOlderEvents
     , stateEvent, accountData
     , sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
+    , setAccountData
     )
 
 {-| This module provides functions for working with Matrix rooms.
@@ -22,6 +23,11 @@ A room represents a channel of communication within a Matrix home server.
 # Sending events
 
 @docs sendMessage, sendMessages, sendOneEvent, sendMultipleEvents
+
+
+# Changing a room
+
+@docs setAccountData
 
 -}
 
@@ -161,3 +167,13 @@ Keep in mind that this function doesn't send the events in order, it just makes 
 sendMultipleEvents : List { content : E.Value, eventType : String, stateKey : Maybe String } -> Room -> List (Task X.Error VaultUpdate)
 sendMultipleEvents =
     Internal.sendEvents
+
+
+{-| Save personal account data on this room.
+
+The homeserver will save this information on this room, but it will only be visible to the user who sent it.
+
+-}
+setAccountData : String -> E.Value -> Room -> Task X.Error VaultUpdate
+setAccountData =
+    Internal.setAccountData

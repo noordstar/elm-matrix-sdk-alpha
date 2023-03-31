@@ -260,3 +260,10 @@ sendMessages pieces (Room { context, room }) =
 leave : Room -> Task X.Error VaultUpdate
 leave ((Room { context }) as r) =
     Api.leave { roomId = roomId r, reason = Nothing } context
+
+
+{-| Set account data.
+-}
+setAccountData : String -> E.Value -> Room -> Task X.Error VaultUpdate
+setAccountData key value ((Room { context }) as r) =
+    Api.setAccountData { content = value, eventType = key, roomId = Just (roomId r) } context

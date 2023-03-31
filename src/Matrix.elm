@@ -1,8 +1,8 @@
 module Matrix exposing
     ( Vault, fromLoginCredentials, fromAccessToken
     , sync, VaultUpdate, updateWith
-    , getRooms, getRoomById, getInvites
-    , joinRoomById
+    , getRooms, getRoomById, getInvites, accountData
+    , joinRoomById, setAccountData
     )
 
 {-| This is the main module of the SDK. Here, you will find basic functions to
@@ -21,12 +21,12 @@ interact with the API.
 
 # Exploring your vault
 
-@docs getRooms, getRoomById, getInvites
+@docs getRooms, getRoomById, getInvites, accountData
 
 
 # Taking action
 
-@docs joinRoomById
+@docs joinRoomById, setAccountData
 
 -}
 
@@ -35,6 +35,7 @@ import Internal.Invite exposing (RoomInvite)
 import Internal.Room exposing (Room)
 import Internal.Tools.Exceptions as X
 import Internal.Vault
+import Json.Encode as E
 import Task exposing (Task)
 
 
@@ -121,8 +122,26 @@ getInvites =
     Internal.Vault.getInvites
 
 
+{-| Account data is personal information that the homeserver will remember for you.
+
+The information will be kept there, and will remain visible if you log in elsewhere.
+Other users cannot see this information.
+
+-}
+accountData : String -> Vault -> Maybe E.Value
+accountData =
+    Internal.Vault.accountData
+
+
 {-| Join a Matrix room based on its room id.
 -}
 joinRoomById : String -> Vault -> Task X.Error VaultUpdate
 joinRoomById =
     Internal.Vault.joinRoomById
+
+
+{-| Update the user's personal account data. This saves the information on the homeserver's side and keeps it available for future use.
+-}
+setAccountData : String -> E.Value -> Vault -> Task X.Error VaultUpdate
+setAccountData =
+    Internal.Vault.setAccountData

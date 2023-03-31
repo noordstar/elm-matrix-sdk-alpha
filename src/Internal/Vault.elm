@@ -335,6 +335,13 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
             Vault { data | context = Credentials.addToken output.accessToken context }
 
 
+{-| Set personal account data
+-}
+setAccountData : String -> E.Value -> Vault -> Task X.Error VaultUpdate
+setAccountData key value (Vault { context }) =
+    Api.setAccountData { content = value, eventType = key, roomId = Nothing } context
+
+
 {-| Synchronize vault
 -}
 sync : Vault -> Task X.Error VaultUpdate
