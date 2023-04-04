@@ -29,7 +29,8 @@ setAccountDataV1 { content, eventType, roomId } context =
             R.callApi "PUT" "/_matrix/client/r0/user/{userId}/account_data/{type}"
     )
         >> R.withAttributes
-            [ R.replaceInUrl "type" eventType
+            [ R.accessToken
+            , R.replaceInUrl "type" eventType
             , R.replaceInUrl "userId" (Context.getUserId context)
             , R.fullBody content
             ]
@@ -48,7 +49,8 @@ setAccountDataV2 { content, eventType, roomId } context =
             R.callApi "PUT" "/_matrix/client/v3/user/{userId}/account_data/{type}"
     )
         >> R.withAttributes
-            [ R.replaceInUrl "type" eventType
+            [ R.accessToken
+            , R.replaceInUrl "type" eventType
             , R.replaceInUrl "userId" (Context.getUserId context)
             , R.fullBody content
             ]
