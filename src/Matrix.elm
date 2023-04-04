@@ -1,7 +1,7 @@
 module Matrix exposing
     ( Vault, fromLoginCredentials, fromAccessToken
     , sync, VaultUpdate, updateWith
-    , getRooms, getRoomById, getInvites, accountData
+    , getRooms, getRoomById, getInvites, accountData, username
     , joinRoomById, setAccountData
     )
 
@@ -21,7 +21,7 @@ interact with the API.
 
 # Exploring your vault
 
-@docs getRooms, getRoomById, getInvites, accountData
+@docs getRooms, getRoomById, getInvites, accountData, username
 
 
 # Taking action
@@ -131,6 +131,16 @@ Other users cannot see this information.
 accountData : String -> Vault -> Maybe E.Value
 accountData =
     Internal.Vault.accountData
+
+
+{-| Get the username of the account that we're using.
+
+The username is a `Maybe String` if the Vault hasn't had its first sync yet,
+and the API might not always be consistent on the username.
+-}
+username : Vault -> Maybe String
+username =
+    Internal.Vault.getUsername
 
 
 {-| Join a Matrix room based on its room id.
