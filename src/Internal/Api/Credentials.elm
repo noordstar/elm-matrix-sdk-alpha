@@ -76,11 +76,13 @@ fromBaseUrl url =
         , vs = Nothing
         }
 
+
 {-| Get the user id registered by the `Credentials` type.
 -}
 getUserId : Credentials -> Maybe String
 getUserId (Credentials { access }) =
     Login.getUserId access
+
 
 {-| Retrieves the spec versions from a given `Credentials` value.
 -}

@@ -56,20 +56,22 @@ getToken t =
         UsernameAndPassword { token } ->
             token
 
+
 getUserId : AccessToken -> Maybe String
 getUserId t =
     case t of
         NoAccess ->
             Nothing
-        
+
         RawAccessToken _ ->
             Nothing
-        
+
         DetailedAccessToken { userId } ->
             Just userId
-        
+
         UsernameAndPassword { userId } ->
             userId
+
 
 addToken : String -> AccessToken -> AccessToken
 addToken s t =

@@ -334,9 +334,11 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
         LoggedInWithUsernameAndPassword _ output ->
             Vault { data | context = Credentials.addToken output.accessToken context }
 
+
 getUsername : Vault -> Maybe String
 getUsername (Vault { context }) =
     Credentials.getUserId context
+
 
 {-| Set personal account data
 -}

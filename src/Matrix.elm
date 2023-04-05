@@ -137,6 +137,7 @@ accountData =
 
 The username is a `Maybe String` if the Vault hasn't had its first sync yet,
 and the API might not always be consistent on the username.
+
 -}
 username : Vault -> Maybe String
 username =
