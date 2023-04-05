@@ -58,6 +58,7 @@ initFromJoinedRoom data jroom =
                 |> List.map (Event.initFromClientEventWithoutRoomId data.roomId)
                 |> Hashdict.fromList IEvent.eventId
         , roomId = data.roomId
+        , tempEvents = []
         , timeline =
             jroom.timeline
                 |> Maybe.map

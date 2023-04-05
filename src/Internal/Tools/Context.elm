@@ -16,6 +16,7 @@ Additionaly, there are remove functions which are intended to tell the compiler
 
 import Internal.Config.Leaking as L
 import Internal.Tools.LoginValues exposing (AccessToken(..))
+import Internal.Tools.Timestamp exposing (Timestamp)
 
 
 type Context a
@@ -24,6 +25,7 @@ type Context a
         , baseUrl : String
         , loginParts : Maybe LoginParts
         , sentEvent : String
+        , timestamp : Timestamp
         , transactionId : String
         , userId : String
         , versions : List String
@@ -59,6 +61,7 @@ init =
         , baseUrl = L.baseUrl
         , loginParts = Nothing
         , sentEvent = L.eventId
+        , timestamp = L.originServerTs
         , transactionId = L.transactionId
         , userId = L.sender
         , versions = L.versions
@@ -91,6 +94,13 @@ getLoginParts (Context { loginParts }) =
 getSentEvent : Context { a | sentEvent : () } -> String
 getSentEvent (Context { sentEvent }) =
     sentEvent
+
+
+{-| Get the event that has been sent to the API recently.
+-}
+getTimestamp : Context { a | timestamp : () } -> Timestamp
+getTimestamp (Context { timestamp }) =
+    timestamp
 
 
 {-| Get the transaction id from the Context.
@@ -135,6 +145,13 @@ setSentEvent sentEvent (Context data) =
     Context { data | sentEvent = sentEvent }
 
 
+{-| Insert a sent event id into the context.
+-}
+setTimestamp : Timestamp -> Context a -> Context { a | timestamp : () }
+setTimestamp timestamp (Context data) =
+    Context { data | timestamp = timestamp }
+
+
 {-| Insert a transaction id into the context.
 -}
 setTransactionId : String -> Context a -> Context { a | transactionId : () }
@@ -174,6 +191,13 @@ removeBaseUrl (Context data) =
 -}
 removeSentEvent : Context { a | sentEvent : () } -> Context a
 removeSentEvent (Context data) =
+    Context data
+
+
+{-| Remove the sent event's id from the Context
+-}
+removeTimestamp : Context { a | timestamp : () } -> Context a
+removeTimestamp (Context data) =
     Context data
 
 

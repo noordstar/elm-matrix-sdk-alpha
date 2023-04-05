@@ -3,7 +3,8 @@ module Internal.Values.Room exposing (..)
 import Dict exposing (Dict)
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
 import Internal.Tools.SpecEnums exposing (SessionDescriptionType(..))
-import Internal.Values.Event exposing (BlindEvent, IEvent)
+import Internal.Tools.Timestamp exposing (Timestamp)
+import Internal.Values.Event as IEvent exposing (BlindEvent, IEvent)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
 import Internal.Values.Timeline as Timeline exposing (Timeline)
 import Json.Encode as E
@@ -15,6 +16,7 @@ type IRoom
         , ephemeral : List BlindEvent
         , events : Hashdict IEvent
         , roomId : String
+        , tempEvents : List IEvent
         , timeline : Timeline
         }
 
@@ -33,6 +35,35 @@ addEvent event (IRoom ({ events } as room)) =
     IRoom { room | events = Hashdict.insert event events }
 
 
+{-| Sometimes, we know that an event exists before the API has told us.
+For example, when we send an event to a room but we haven't synced up yet.
+
+In such a case, it is better to "temporarily" store the event until the next sync -
+this prevents temporary jittering for a user where events can sometimes disappear and reappear
+back and forth for a few seconds.
+
+-}
+addTemporaryEvent : { content : E.Value, eventId : String, eventType : String, originServerTs : Timestamp, sender : String, stateKey : Maybe String } -> IRoom -> IRoom
+addTemporaryEvent data (IRoom ({ tempEvents } as room)) =
+    IRoom
+        { room
+            | tempEvents =
+                List.append tempEvents
+                    ({ content = data.content
+                     , eventId = data.eventId
+                     , originServerTs = data.originServerTs
+                     , roomId = room.roomId
+                     , sender = data.sender
+                     , stateKey = data.stateKey
+                     , eventType = data.eventType
+                     , unsigned = Nothing
+                     }
+                        |> IEvent.init
+                        |> List.singleton
+                    )
+        }
+
+
 {-| Add new events as the most recent events.
 -}
 addEvents :
@@ -49,6 +80,7 @@ addEvents ({ events } as data) (IRoom room) =
         { room
             | events = List.foldl Hashdict.insert room.events events
             , timeline = Timeline.addNewEvents data room.timeline
+            , tempEvents = []
         }
 
 
@@ -101,7 +133,9 @@ latestGap (IRoom room) =
 -}
 mostRecentEvents : IRoom -> List IEvent
 mostRecentEvents (IRoom room) =
-    Timeline.mostRecentEvents room.timeline
+    List.append
+        (Timeline.mostRecentEvents room.timeline)
+        room.tempEvents
 
 
 {-| Get the room's id.

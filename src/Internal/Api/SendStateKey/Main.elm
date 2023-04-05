@@ -7,7 +7,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sendStateKey : Context (VBA a) -> SendStateKeyInput -> Task X.Error SendStateKeyOutput
+sendStateKey : Context (VBA { a | timestamp : () }) -> SendStateKeyInput -> Task X.Error SendStateKeyOutput
 sendStateKey context input =
     VC.withBottomLayer
         { current = Api.sendStateKeyV1

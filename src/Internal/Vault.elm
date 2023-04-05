@@ -128,6 +128,9 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
         BanUser input () ->
             vault
 
+        CurrentTimestamp t ->
+            Vault { cred = Internal.insertTimestamp t cred, context = context }
+
         GetEvent input output ->
             case getRoomById input.roomId vault of
                 Just room ->
@@ -215,23 +218,53 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                 |> Vault
 
         -- TODO
-        LeftRoom input _ ->
+        LeftRoom input () ->
             cred
                 |> Internal.removeInvite input.roomId
                 |> (\x -> { cred = x, context = context })
                 |> Vault
 
-        -- TODO
-        MessageEventSent _ _ ->
-            vault
+        MessageEventSent { content, eventType, roomId } { eventId } ->
+            Maybe.map2
+                (\room sender ->
+                    room
+                        |> Room.withoutCredentials
+                        |> IRoom.addTemporaryEvent
+                            { content = content
+                            , eventType = eventType
+                            , eventId = eventId
+                            , originServerTs = Internal.lastUpdate cred
+                            , sender = sender
+                            , stateKey = Nothing
+                            }
+                )
+                (getRoomById roomId vault)
+                (getUsername vault)
+                |> Maybe.map (Room.withCredentials context >> insertRoom >> (|>) vault)
+                |> Maybe.withDefault vault
 
         -- TODO
         RedactedEvent _ _ ->
             vault
 
-        -- TODO
-        StateEventSent _ _ ->
-            vault
+        StateEventSent { content, eventType, roomId, stateKey } { eventId } ->
+            Maybe.map2
+                (\room sender ->
+                    room
+                        |> Room.withoutCredentials
+                        |> IRoom.addTemporaryEvent
+                            { content = content
+                            , eventType = eventType
+                            , eventId = eventId
+                            , originServerTs = Internal.lastUpdate cred
+                            , sender = sender
+                            , stateKey = Just stateKey
+                            }
+                )
+                (getRoomById roomId vault)
+                (getUsername vault)
+                |> Maybe.map (Room.withCredentials context >> insertRoom >> (|>) vault)
+                |> Maybe.withDefault vault
 
         SyncUpdate input output ->
             let

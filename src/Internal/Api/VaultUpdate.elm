@@ -21,6 +21,7 @@ import Internal.Api.WhoAmI.Main as WhoAmI
 import Internal.Tools.Context as Context exposing (VB, VBA, VBAT)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.LoginValues exposing (AccessToken(..))
+import Internal.Tools.Timestamp exposing (Timestamp)
 import Task exposing (Task)
 import Time
 
@@ -30,6 +31,7 @@ type VaultUpdate
       -- Updates as a result of API calls
     | AccountDataSet SetAccountData.SetAccountInput SetAccountData.SetAccountOutput
     | BanUser Ban.BanInput Ban.BanOutput
+    | CurrentTimestamp Timestamp
     | GetEvent GetEvent.EventInput GetEvent.EventOutput
     | GetMessages GetMessages.GetMessagesInput GetMessages.GetMessagesOutput
     | InviteSent Invite.InviteInput Invite.InviteOutput
@@ -176,6 +178,19 @@ getMessages input =
         )
         GetMessages.getMessages
         input
+
+
+getTimestamp : TaskChain VaultUpdate a { a | timestamp : () }
+getTimestamp =
+    toChain
+        (\output ->
+            Chain.TaskChainPiece
+                { contextChange = Context.setTimestamp output
+                , messages = [ CurrentTimestamp output ]
+                }
+        )
+        (always <| always Time.now)
+        ()
 
 
 {-| Get the supported spec versions from the homeserver.
@@ -325,7 +340,7 @@ redact input =
 
 {-| Send a message event to a room.
 -}
-sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain VaultUpdate (VBAT a) (VBA { a | sentEvent : () })
+sendMessageEvent : SendMessageEvent.SendMessageEventInput -> TaskChain VaultUpdate (VBAT { a | timestamp : () }) (VBA { a | sentEvent : (), timestamp : () })
 sendMessageEvent input =
     toChain
         (\output ->
@@ -341,7 +356,7 @@ sendMessageEvent input =
 
 {-| Send a state key event to a room.
 -}
-sendStateEvent : SendStateKey.SendStateKeyInput -> TaskChain VaultUpdate (VBA a) (VBA { a | sentEvent : () })
+sendStateEvent : SendStateKey.SendStateKeyInput -> TaskChain VaultUpdate (VBA { a | timestamp : () }) (VBA { a | sentEvent : (), timestamp : () })
 sendStateEvent input =
     toChain
         (\output ->

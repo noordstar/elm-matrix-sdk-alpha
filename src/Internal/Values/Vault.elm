@@ -5,7 +5,9 @@ It handles all communication with the homeserver.
 -}
 
 import Dict exposing (Dict)
+import Internal.Config.Leaking as L
 import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
+import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Room as Room exposing (IRoom)
 import Internal.Values.RoomInvite as Invite exposing (IRoomInvite)
 import Json.Encode as E
@@ -15,6 +17,7 @@ type IVault
     = IVault
         { accountData : Dict String E.Value
         , invites : List IRoomInvite
+        , latestUpdate : Timestamp
         , rooms : Hashdict IRoom
         , since : Maybe String
         }
@@ -76,6 +79,7 @@ init =
     IVault
         { accountData = Dict.empty
         , invites = []
+        , latestUpdate = L.originServerTs
         , rooms = Hashdict.empty Room.roomId
         , since = Nothing
         }
@@ -107,6 +111,20 @@ insertRoom : IRoom -> IVault -> IVault
 insertRoom room (IVault data) =
     IVault
         { data | rooms = Hashdict.insert room data.rooms }
+
+
+{-| Insert a timestamp of when a timestamp was last delivered.
+-}
+insertTimestamp : Timestamp -> IVault -> IVault
+insertTimestamp time (IVault data) =
+    IVault { data | latestUpdate = time }
+
+
+{-| Last time the vault was updated. Often used as an approximation.
+-}
+lastUpdate : IVault -> Timestamp
+lastUpdate (IVault { latestUpdate }) =
+    latestUpdate
 
 
 {-| Remove an invite. This is usually done when the invite has been accepted or rejected.

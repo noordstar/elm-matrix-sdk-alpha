@@ -123,6 +123,7 @@ sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
                     |> List.foldl Hash.independent (Hash.fromString "send message")
                     |> Hash.toString
             )
+        |> Chain.andThen C.getTimestamp
         |> Chain.andThen (C.sendMessageEvent { content = content, eventType = eventType, roomId = roomId })
         |> Chain.andThen
             (Chain.maybe <| C.getEvent { roomId = roomId })
@@ -132,6 +133,7 @@ sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
 sendStateEvent : SendStateKeyInput -> Credentials -> FutureTask
 sendStateEvent data cred =
     C.makeVBA cred
+        |> Chain.andThen C.getTimestamp
         |> Chain.andThen (C.sendStateEvent data)
         |> Chain.andThen
             (Chain.maybe <| C.getEvent { roomId = data.roomId })

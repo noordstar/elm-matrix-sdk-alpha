@@ -7,7 +7,7 @@ import Internal.Tools.VersionControl as VC
 import Task exposing (Task)
 
 
-sendMessageEvent : Context (VBAT a) -> SendMessageEventInput -> Task X.Error SendMessageEventOutput
+sendMessageEvent : Context (VBAT { a | timestamp : () }) -> SendMessageEventInput -> Task X.Error SendMessageEventOutput
 sendMessageEvent context input =
     VC.withBottomLayer
         { current = Api.sendMessageEventV1
