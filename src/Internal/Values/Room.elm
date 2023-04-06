@@ -28,6 +28,13 @@ accountData key (IRoom room) =
     Dict.get key room.accountData
 
 
+{-| Add new account data to the room.
+-}
+addAccountData : String -> E.Value -> IRoom -> IRoom
+addAccountData eventType content (IRoom room) =
+    IRoom { room | accountData = Dict.insert eventType content room.accountData }
+
+
 {-| Add the data of a single event to the hashdict of events.
 -}
 addEvent : IEvent -> IRoom -> IRoom

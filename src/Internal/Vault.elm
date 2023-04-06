@@ -122,7 +122,21 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
 
         -- TODO
         AccountDataSet input () ->
-            vault
+            case input.roomId of
+                Just rId ->
+                    case getRoomById rId vault of
+                        Just room ->
+                            room
+                                |> Room.addAccountData input.eventType input.content
+                                |> insertRoom
+                                |> (|>) vault
+
+                        Nothing ->
+                            vault
+
+                -- TODO: Add global account data
+                Nothing ->
+                    vault
 
         -- TODO
         BanUser input () ->
