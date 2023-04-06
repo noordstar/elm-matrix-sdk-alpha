@@ -87,7 +87,14 @@ addEvents ({ events } as data) (IRoom room) =
         { room
             | events = List.foldl Hashdict.insert room.events events
             , timeline = Timeline.addNewEvents data room.timeline
-            , tempEvents = []
+            , tempEvents =
+                List.filter
+                    (\tempEvent ->
+                        List.member
+                            (IEvent.eventId tempEvent)
+                            (List.map IEvent.eventId events)
+                    )
+                    room.tempEvents
         }
 
 
