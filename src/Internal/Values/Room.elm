@@ -93,6 +93,7 @@ addEvents ({ events } as data) (IRoom room) =
                         List.member
                             (IEvent.eventId tempEvent)
                             (List.map IEvent.eventId events)
+                            |> not
                     )
                     room.tempEvents
         }
