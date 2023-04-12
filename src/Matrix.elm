@@ -119,7 +119,7 @@ getRoomById =
 -}
 getInvites : Vault -> List RoomInvite
 getInvites =
-    Internal.Vault.getInvites
+    Internal.Vault.invites
 
 
 {-| Account data is personal information that the homeserver will remember for you.

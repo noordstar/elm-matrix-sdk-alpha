@@ -76,7 +76,7 @@ rejectWithReason reason invite =
 -}
 roomId : RoomInvite -> String
 roomId =
-    Internal.getRoomId
+    Internal.roomId
 
 
 {-| The `RoomInviteEvent` type represents a stripped event that your user can see while they haven't joined the group yet.
@@ -117,13 +117,15 @@ stateKey =
     IR.stateKey
 
 
-{-| Get a specific event with a specific event content type and state key, if it exists.
--}
-getEvent : { eventType : String, stateKey : String } -> RoomInvite -> Maybe RoomInviteEvent
-getEvent data invite =
-    invite
-        |> Internal.withoutCredentials
-        |> IR.getEvent data
+
+-- -- TODO: Fix this
+-- {-| Get a specific event with a specific event content type and state key, if it exists.
+-- -}
+-- getEvent : { eventType : String, stateKey : String } -> RoomInvite -> Maybe RoomInviteEvent
+-- getEvent data invite =
+--     invite
+--         |> Internal.withoutCredentials
+--         |> IR.getEvent data
 
 
 {-| Instead of looking at just one event, get all events in a list.

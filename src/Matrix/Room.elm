@@ -107,7 +107,7 @@ this inserts more events at the start of the `[mostRecentEvents](#mostRecentEven
 -}
 findOlderEvents : { limit : Maybe Int, room : Room } -> Task X.Error VaultUpdate
 findOlderEvents { limit, room } =
-    Internal.getOlderEvents { limit = limit } room
+    Internal.findOlderEvents { limit = limit } room
 
 
 {-| This function will always display the most recent events from the Matrix room.

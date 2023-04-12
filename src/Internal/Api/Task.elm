@@ -5,7 +5,6 @@ module Internal.Api.Task exposing (..)
 
 import Hash
 import Internal.Api.Chain as Chain
-import Internal.Api.Credentials as Cred exposing (Credentials)
 import Internal.Api.GetEvent.Main exposing (EventInput)
 import Internal.Api.GetMessages.Main exposing (GetMessagesInput)
 import Internal.Api.Invite.Main exposing (InviteInput)
@@ -14,6 +13,7 @@ import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
 import Internal.Api.Leave.Main exposing (LeaveInput)
 import Internal.Api.SendStateKey.Main exposing (SendStateKeyInput)
 import Internal.Api.SetAccountData.Main exposing (SetAccountInput)
+import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
 import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.VaultUpdate as C
 import Json.Encode as E
@@ -29,7 +29,7 @@ type alias EventInput =
     }
 
 
-getEvent : EventInput -> Credentials -> FutureTask
+getEvent : EventInput -> Snackbar a -> FutureTask
 getEvent { eventId, roomId } cred =
     C.makeVBA cred
         |> Chain.andThen (C.withSentEvent eventId)
@@ -37,35 +37,35 @@ getEvent { eventId, roomId } cred =
         |> C.toTask
 
 
-getMessages : GetMessagesInput -> Credentials -> FutureTask
+getMessages : GetMessagesInput -> Snackbar a -> FutureTask
 getMessages data cred =
     C.makeVBA cred
         |> Chain.andThen (C.getMessages data)
         |> C.toTask
 
 
-invite : InviteInput -> Credentials -> FutureTask
+invite : InviteInput -> Snackbar a -> FutureTask
 invite data cred =
     C.makeVBA cred
         |> Chain.andThen (C.invite data)
         |> C.toTask
 
 
-joinedMembers : JoinedMembersInput -> Credentials -> FutureTask
+joinedMembers : JoinedMembersInput -> Snackbar a -> FutureTask
 joinedMembers data cred =
     C.makeVBA cred
         |> Chain.andThen (C.joinedMembers data)
         |> C.toTask
 
 
-joinRoomById : JoinRoomByIdInput -> Credentials -> FutureTask
+joinRoomById : JoinRoomByIdInput -> Snackbar a -> FutureTask
 joinRoomById data cred =
     C.makeVBA cred
         |> Chain.andThen (C.joinRoomById data)
         |> C.toTask
 
 
-leave : LeaveInput -> Credentials -> FutureTask
+leave : LeaveInput -> Snackbar a -> FutureTask
 leave data cred =
     C.makeVBA cred
         |> Chain.andThen (C.leave data)
@@ -80,7 +80,7 @@ type alias RedactInput =
     }
 
 
-redact : RedactInput -> Credentials -> FutureTask
+redact : RedactInput -> Snackbar a -> FutureTask
 redact { eventId, extraTransactionNoise, reason, roomId } cred =
     cred
         |> C.makeVBAT
@@ -109,7 +109,7 @@ type alias SendMessageEventInput =
     }
 
 
-sendMessageEvent : SendMessageEventInput -> Credentials -> FutureTask
+sendMessageEvent : SendMessageEventInput -> Snackbar a -> FutureTask
 sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
     cred
         |> C.makeVBAT
@@ -130,7 +130,7 @@ sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
         |> C.toTask
 
 
-sendStateEvent : SendStateKeyInput -> Credentials -> FutureTask
+sendStateEvent : SendStateKeyInput -> Snackbar a -> FutureTask
 sendStateEvent data cred =
     C.makeVBA cred
         |> Chain.andThen C.getTimestamp
@@ -140,24 +140,24 @@ sendStateEvent data cred =
         |> C.toTask
 
 
-setAccountData : SetAccountInput -> Credentials -> FutureTask
+setAccountData : SetAccountInput -> Snackbar a -> FutureTask
 setAccountData data cred =
     C.makeVBA cred
         |> Chain.andThen (C.setAccountData data)
         |> C.toTask
 
 
-sync : SyncInput -> Credentials -> FutureTask
+sync : SyncInput -> Snackbar a -> FutureTask
 sync data cred =
     C.makeVBA cred
         |> Chain.andThen (C.sync data)
         |> C.toTask
 
 
-loginMaybeSync : SyncInput -> Credentials -> FutureTask
+loginMaybeSync : SyncInput -> Snackbar a -> FutureTask
 loginMaybeSync data cred =
     C.makeVB cred
-        |> Chain.andThen (C.accessToken (Cred.refreshedAccessToken cred))
+        |> Chain.andThen (C.accessToken (Snackbar.removedAccessToken cred))
         |> Chain.andThen
             (Chain.maybe <| C.sync data)
         |> C.toTask

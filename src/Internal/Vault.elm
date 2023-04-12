@@ -8,7 +8,7 @@ This file combines the internal functions with the API endpoints to create a ful
 -}
 
 import Dict
-import Internal.Api.Credentials as Credentials exposing (Credentials)
+import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
 import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.Task as Api
 import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
@@ -30,11 +30,15 @@ and Elm will figure out which key to use.
 If you pass the `Vault` into any function, then the library will look for
 the right keys and tokens to get the right information.
 -}
-type Vault
-    = Vault
-        { cred : Internal.IVault
-        , context : Credentials
-        }
+type alias Vault =
+    Snackbar Internal.IVault
+
+
+{-| Get personal account data linked to an account.
+-}
+accountData : String -> Vault -> Maybe E.Value
+accountData key =
+    Snackbar.withoutCandy >> Internal.accountData key
 
 
 {-| Get a Vault type based on an unknown access token.
@@ -45,77 +49,66 @@ when the access token expires, is revoked or something else happens.
 -}
 fromAccessToken : { baseUrl : String, accessToken : String } -> Vault
 fromAccessToken { baseUrl, accessToken } =
-    Credentials.fromBaseUrl baseUrl
-        |> Credentials.addToken accessToken
-        |> (\context ->
-                { cred = Internal.init, context = context }
-           )
-        |> Vault
+    Snackbar.init
+        { baseUrl = baseUrl
+        , content = Internal.init
+        }
+        |> Snackbar.addToken accessToken
 
 
 {-| Get a Vault type using a username and password.
 -}
 fromLoginVault : { username : String, password : String, baseUrl : String } -> Vault
 fromLoginVault { username, password, baseUrl } =
-    Credentials.fromBaseUrl baseUrl
-        |> Credentials.addUsernameAndPassword
+    Snackbar.init
+        { baseUrl = baseUrl
+        , content = Internal.init
+        }
+        |> Snackbar.addUsernameAndPassword
             { username = username
             , password = password
             }
-        |> (\context ->
-                { cred = Internal.init, context = context }
-           )
-        |> Vault
-
-
-{-| Get personal account data linked to an account.
--}
-accountData : String -> Vault -> Maybe E.Value
-accountData key (Vault { cred }) =
-    Internal.accountData key cred
 
 
 {-| Get a user's invited rooms.
 -}
-getInvites : Vault -> List Invite.RoomInvite
-getInvites (Vault { cred, context }) =
-    Internal.getInvites cred
-        |> List.map (Invite.withCredentials context)
+invites : Vault -> List Invite.RoomInvite
+invites =
+    Snackbar.mapList Internal.getInvites
 
 
 {-| Get a room based on its id.
 -}
 getRoomById : String -> Vault -> Maybe Room.Room
-getRoomById roomId (Vault { cred, context }) =
-    Internal.getRoomById roomId cred
-        |> Maybe.map (Room.withCredentials context)
+getRoomById roomId =
+    Snackbar.mapMaybe (Internal.getRoomById roomId)
 
 
-{-| Insert an internal room type into the credentials.
+{-| Insert an internal room type into the vault.
 -}
 insertInternalRoom : IRoom.IRoom -> Vault -> Vault
-insertInternalRoom iroom (Vault data) =
-    Vault { data | cred = Internal.insertRoom iroom data.cred }
+insertInternalRoom iroom =
+    Snackbar.map (Internal.insertRoom iroom)
 
 
-{-| Internal a full room type into the credentials.
+{-| Internal a full room type into the vault.
 -}
 insertRoom : Room.Room -> Vault -> Vault
 insertRoom =
-    Room.withoutCredentials >> insertInternalRoom
+    Snackbar.withoutCandy >> insertInternalRoom
 
 
 {-| Join a Matrix room by its id.
 -}
 joinRoomById : String -> Vault -> Task X.Error VaultUpdate
-joinRoomById roomId (Vault { context }) =
-    Api.joinRoomById { roomId = roomId, reason = Nothing } context
+joinRoomById roomId vault =
+    Api.joinRoomById { roomId = roomId, reason = Nothing } vault
 
 
 {-| Update the Vault type with new values
 -}
 updateWith : VaultUpdate -> Vault -> Vault
-updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
+updateWith vaultUpdate vault =
     case vaultUpdate of
         MultipleUpdates updates ->
             List.foldl updateWith vault updates
@@ -143,7 +136,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
             vault
 
         CurrentTimestamp t ->
-            Vault { cred = Internal.insertTimestamp t cred, context = context }
+            Snackbar.map (Internal.insertTimestamp t) vault
 
         GetEvent input output ->
             case getRoomById input.roomId vault of
@@ -192,7 +185,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
             case ( getRoomById input.roomId vault, nextBatch ) of
                 ( Just room, Just nb ) ->
                     room
-                        |> Room.withoutCredentials
+                        |> Snackbar.withoutCandy
                         |> IRoom.insertEvents
                             { events =
                                 output.chunk
@@ -210,8 +203,8 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                             , stateDelta = Just <| StateManager.fromEventList (List.map Event.initFromGetMessages output.state)
                             }
                         |> Internal.insertRoom
-                        |> (|>) cred
-                        |> (\v -> Vault { cred = v, context = context })
+                        |> Snackbar.map
+                        |> (|>) vault
 
                 _ ->
                     vault
@@ -226,35 +219,29 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
 
         -- TODO
         JoinedRoom input _ ->
-            cred
-                |> Internal.removeInvite input.roomId
-                |> (\x -> { cred = x, context = context })
-                |> Vault
+            Snackbar.map (Internal.removeInvite input.roomId) vault
 
         -- TODO
         LeftRoom input () ->
-            cred
-                |> Internal.removeInvite input.roomId
-                |> (\x -> { cred = x, context = context })
-                |> Vault
+            Snackbar.map (Internal.removeInvite input.roomId) vault
 
         MessageEventSent { content, eventType, roomId } { eventId } ->
             Maybe.map2
                 (\room sender ->
                     room
-                        |> Room.withoutCredentials
+                        |> Snackbar.withoutCandy
                         |> IRoom.addTemporaryEvent
                             { content = content
                             , eventType = eventType
                             , eventId = eventId
-                            , originServerTs = Internal.lastUpdate cred
+                            , originServerTs = Internal.lastUpdate (Snackbar.withoutCandy vault)
                             , sender = sender
                             , stateKey = Nothing
                             }
                 )
                 (getRoomById roomId vault)
                 (getUsername vault)
-                |> Maybe.map (Room.withCredentials context >> insertRoom >> (|>) vault)
+                |> Maybe.map (Snackbar.withCandyFrom vault >> insertRoom >> (|>) vault)
                 |> Maybe.withDefault vault
 
         -- TODO
@@ -265,19 +252,19 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
             Maybe.map2
                 (\room sender ->
                     room
-                        |> Room.withoutCredentials
+                        |> Snackbar.withoutCandy
                         |> IRoom.addTemporaryEvent
                             { content = content
                             , eventType = eventType
                             , eventId = eventId
-                            , originServerTs = Internal.lastUpdate cred
+                            , originServerTs = Internal.lastUpdate (Snackbar.withoutCandy vault)
                             , sender = sender
                             , stateKey = Just stateKey
                             }
                 )
                 (getRoomById roomId vault)
                 (getUsername vault)
-                |> Maybe.map (Room.withCredentials context >> insertRoom >> (|>) vault)
+                |> Maybe.map (Snackbar.withCandyFrom vault >> insertRoom >> (|>) vault)
                 |> Maybe.withDefault vault
 
         SyncUpdate input output ->
@@ -303,7 +290,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                                         (case jroom.timeline of
                                             Just timeline ->
                                                 room
-                                                    |> Room.withoutCredentials
+                                                    |> Snackbar.withoutCandy
                                                     |> IRoom.addEvents
                                                         { events =
                                                             List.map
@@ -325,7 +312,7 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                                                         }
 
                                             Nothing ->
-                                                Room.withoutCredentials room
+                                                Snackbar.withoutCandy room
                                         )
                                             |> (\r ->
                                                     jroom.accountData
@@ -342,8 +329,8 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                                             |> Room.initFromJoinedRoom { nextBatch = output.nextBatch, roomId = roomId }
                             )
 
-                invites : List IRoomInvite
-                invites =
+                inviteList : List IRoomInvite
+                inviteList =
                     output.rooms
                         |> Maybe.map .invite
                         |> Maybe.withDefault Dict.empty
@@ -354,61 +341,62 @@ updateWith vaultUpdate ((Vault ({ cred, context } as data)) as vault) =
                         |> List.map (\( roomId, events ) -> { roomId = roomId, events = events })
                         |> List.map Invite.initFromStrippedStateEvent
             in
-            cred
-                -- Add global account data
-                |> (\c -> List.foldl Internal.insertAccountData c accData)
-                -- Add new since token
-                |> Internal.addSince output.nextBatch
-                -- Add joined rooms
-                |> List.foldl Internal.insertRoom
-                |> (|>) jRooms
-                -- Add invites
-                |> List.foldl Internal.addInvite
-                |> (|>) invites
-                |> (\x -> { cred = x, context = context })
-                |> Vault
+            Snackbar.map
+                (\ivault ->
+                    ivault
+                        -- Add global account data
+                        |> (\c -> List.foldl Internal.insertAccountData c accData)
+                        -- Add new since token
+                        |> Internal.addSince output.nextBatch
+                        -- Add joined rooms
+                        |> List.foldl Internal.insertRoom
+                        |> (|>) jRooms
+                        -- Add invites
+                        |> List.foldl Internal.addInvite
+                        |> (|>) inviteList
+                )
+                vault
 
         UpdateAccessToken token ->
-            Vault { data | context = Credentials.addToken token context }
+            Snackbar.addToken token vault
 
         UpdateVersions versions ->
-            Vault { data | context = Credentials.addVersions versions context }
+            Snackbar.addVersions versions vault
 
         UpdateWhoAmI whoami ->
-            Vault { data | context = Credentials.addWhoAmI whoami context }
+            Snackbar.addWhoAmI whoami vault
 
-        -- TODO: Save ALL info
         LoggedInWithUsernameAndPassword _ output ->
-            Vault { data | context = Credentials.addToken output.accessToken context }
+            Snackbar.addToken output.accessToken vault
 
 
 getUsername : Vault -> Maybe String
-getUsername (Vault { context }) =
-    Credentials.getUserId context
+getUsername =
+    Snackbar.userId
 
 
 {-| Set personal account data
 -}
 setAccountData : String -> E.Value -> Vault -> Task X.Error VaultUpdate
-setAccountData key value (Vault { context }) =
-    Api.setAccountData { content = value, eventType = key, roomId = Nothing } context
+setAccountData key value vault =
+    Api.setAccountData { content = value, eventType = key, roomId = Nothing } vault
 
 
 {-| Synchronize vault
 -}
 sync : Vault -> Task X.Error VaultUpdate
-sync (Vault { cred, context }) =
+sync vault =
     let
         syncInput : SyncInput
         syncInput =
             { filter = Nothing
             , fullState = Nothing
             , setPresence = Nothing
-            , since = Internal.getSince cred
+            , since = Internal.getSince (Snackbar.withoutCandy vault)
             , timeout = Just 30
             }
     in
-    Api.sync syncInput context
+    Api.sync syncInput vault
         -- TODO: The sync function is described as "updating all the tokens".
         -- TODO: For this reason, (only) the sync function should handle errors
         -- TODO: that indicate that the user's access tokens have expired.
@@ -428,10 +416,10 @@ sync (Vault { cred, context }) =
                     -- TODO: The login should be different when soft_logout.
                     -- TODO: Add support for refresh token.
                     X.ServerException (X.M_UNKNOWN_TOKEN _) ->
-                        Api.loginMaybeSync syncInput context
+                        Api.loginMaybeSync syncInput vault
 
                     X.ServerException (X.M_MISSING_TOKEN _) ->
-                        Api.loginMaybeSync syncInput context
+                        Api.loginMaybeSync syncInput vault
 
                     X.ServerException _ ->
                         Task.fail err
@@ -441,7 +429,5 @@ sync (Vault { cred, context }) =
 {-| Get a list of all synchronised rooms.
 -}
 rooms : Vault -> List Room.Room
-rooms (Vault { cred, context }) =
-    cred
-        |> Internal.getRooms
-        |> List.map (Room.withCredentials context)
+rooms =
+    Snackbar.mapList Internal.getRooms

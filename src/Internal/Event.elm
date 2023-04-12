@@ -7,10 +7,10 @@ resend other events or forward them elsewhere.
 
 -}
 
-import Internal.Api.Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
 import Internal.Api.GetMessages.V4.SpecObjects as GetMessagesSO
+import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
 import Internal.Api.Sync.V2.SpecObjects as SyncSO
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
@@ -19,22 +19,8 @@ import Json.Encode as E
 
 {-| The central event type. This type will be used by the user and will be directly interacted with.
 -}
-type Event
-    = Event
-        { event : Internal.IEvent
-        , context : Credentials
-        }
-
-
-{-| Using the credentials' background information and an internal event type,
-create an interactive event type.
--}
-withCredentials : Credentials -> Internal.IEvent -> Event
-withCredentials context event =
-    Event
-        { event = event
-        , context = context
-        }
+type alias Event =
+    Snackbar Internal.IEvent
 
 
 {-| Create an internal event type from an API endpoint event object.
@@ -115,67 +101,58 @@ initFromClientEventWithoutRoomId rId output =
         }
 
 
-{-| Get the internal event type that is hidden in the interactive event type.
--}
-withoutCredentials : Event -> Internal.IEvent
-withoutCredentials (Event { event }) =
-    event
-
-
 
 {- GETTER FUNCTIONS -}
 
 
 content : Event -> E.Value
 content =
-    withoutCredentials >> Internal.content
+    Snackbar.withoutCandy >> Internal.content
 
 
 eventId : Event -> String
 eventId =
-    withoutCredentials >> Internal.eventId
+    Snackbar.withoutCandy >> Internal.eventId
 
 
 originServerTs : Event -> Timestamp
 originServerTs =
-    withoutCredentials >> Internal.originServerTs
+    Snackbar.withoutCandy >> Internal.originServerTs
 
 
 roomId : Event -> String
 roomId =
-    withoutCredentials >> Internal.roomId
+    Snackbar.withoutCandy >> Internal.roomId
 
 
 sender : Event -> String
 sender =
-    withoutCredentials >> Internal.sender
+    Snackbar.withoutCandy >> Internal.sender
 
 
 stateKey : Event -> Maybe String
 stateKey =
-    withoutCredentials >> Internal.stateKey
+    Snackbar.withoutCandy >> Internal.stateKey
 
 
 eventType : Event -> String
 eventType =
-    withoutCredentials >> Internal.eventType
+    Snackbar.withoutCandy >> Internal.eventType
 
 
 age : Event -> Maybe Int
 age =
-    withoutCredentials >> Internal.age
+    Snackbar.withoutCandy >> Internal.age
 
 
 redactedBecause : Event -> Maybe Event
-redactedBecause (Event data) =
-    data.event
+redactedBecause event =
+    event
+        |> Snackbar.withoutCandy
         |> Internal.redactedBecause
-        |> Maybe.map
-            (\event ->
-                Event { data | event = event }
-            )
+        |> Maybe.map (Snackbar.withCandyFrom event)
 
 
 transactionId : Event -> Maybe String
 transactionId =
-    withoutCredentials >> Internal.transactionId
+    Snackbar.withoutCandy >> Internal.transactionId

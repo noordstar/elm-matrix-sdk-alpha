@@ -2,7 +2,6 @@ module Internal.Api.VaultUpdate exposing (..)
 
 import Internal.Api.Ban.Main as Ban
 import Internal.Api.Chain as Chain exposing (IdemChain, TaskChain)
-import Internal.Api.Credentials as Credentials exposing (Credentials)
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetMessages.Main as GetMessages
 import Internal.Api.Invite.Main as Invite
@@ -14,6 +13,7 @@ import Internal.Api.Redact.Main as Redact
 import Internal.Api.SendMessageEvent.Main as SendMessageEvent
 import Internal.Api.SendStateKey.Main as SendStateKey
 import Internal.Api.SetAccountData.Main as SetAccountData
+import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
 import Internal.Api.Sync.Main as Sync
 import Internal.Api.Versions.Main as Versions
 import Internal.Api.Versions.V1.Versions as V
@@ -296,28 +296,28 @@ loginWithUsernameAndPassword input =
 
 {-| Make a VB-context based chain.
 -}
-makeVB : Credentials -> TaskChain VaultUpdate {} (VB {})
-makeVB cred =
-    cred
-        |> Credentials.baseUrl
+makeVB : Snackbar a -> TaskChain VaultUpdate {} (VB {})
+makeVB snackbar =
+    snackbar
+        |> Snackbar.baseUrl
         |> withBaseUrl
-        |> Chain.andThen (versions (Credentials.versions cred))
+        |> Chain.andThen (versions (Snackbar.versions snackbar))
 
 
 {-| Make a VBA-context based chain.
 -}
-makeVBA : Credentials -> TaskChain VaultUpdate {} (VBA { userId : () })
-makeVBA cred =
-    cred
+makeVBA : Snackbar a -> TaskChain VaultUpdate {} (VBA { userId : () })
+makeVBA snackbar =
+    snackbar
         |> makeVB
-        |> Chain.andThen (accessToken (Credentials.accessToken cred))
+        |> Chain.andThen (accessToken (Snackbar.accessToken snackbar))
 
 
 {-| Make a VBAT-context based chain.
 -}
-makeVBAT : (Int -> String) -> Credentials -> TaskChain VaultUpdate {} (VBAT { userId : () })
-makeVBAT toString cred =
-    cred
+makeVBAT : (Int -> String) -> Snackbar a -> TaskChain VaultUpdate {} (VBAT { userId : () })
+makeVBAT toString snackbar =
+    snackbar
         |> makeVBA
         |> Chain.andThen (withTransactionId toString)
 
