@@ -2,6 +2,7 @@ module Internal.Api.JoinedMembers.Api exposing (..)
 
 import Internal.Api.JoinedMembers.V1.SpecObjects as SO1
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
@@ -22,6 +23,7 @@ joinedMembersV1 { roomId } =
         >> R.withAttributes
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
             ]
         >> R.toTask SO1.roomMemberListDecoder
 
@@ -32,5 +34,6 @@ joinedMembersV2 { roomId } =
         >> R.withAttributes
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
             ]
         >> R.toTask SO1.roomMemberListDecoder

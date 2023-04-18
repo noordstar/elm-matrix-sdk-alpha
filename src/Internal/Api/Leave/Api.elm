@@ -1,6 +1,7 @@
 module Internal.Api.Leave.Api exposing (..)
 
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
@@ -25,16 +26,18 @@ leaveV1 { roomId } =
         >> R.withAttributes
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask (D.map (always ()) D.value)
 
 
 leaveV2 : LeaveInputV2 -> Context { a | accessToken : (), baseUrl : () } -> Task X.Error LeaveOutputV1
 leaveV2 { roomId, reason } =
-    R.callApi "POST" "/_matrix/client/r0/rooms/{roomId}/leave"
+    R.callApi "POST" "/_matrix/client/v3/rooms/{roomId}/leave"
         >> R.withAttributes
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
             , R.bodyOpString "reason" reason
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask (D.map (always ()) D.value)

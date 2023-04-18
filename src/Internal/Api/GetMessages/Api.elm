@@ -5,6 +5,7 @@ import Internal.Api.GetMessages.V2.SpecObjects as SO2
 import Internal.Api.GetMessages.V3.SpecObjects as SO3
 import Internal.Api.GetMessages.V4.SpecObjects as SO4
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Internal.Tools.SpecEnums as Enums
@@ -75,6 +76,7 @@ getMessagesV1 { direction, from, limit, roomId } =
                     , R.queryString "dir" (Enums.fromEventOrder direction)
                     , R.queryString "from" f
                     , R.queryOpInt "limit" limit
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO1.messagesResponseDecoder
 
@@ -94,6 +96,7 @@ getMessagesV2 { direction, from, limit, roomId, to } =
                     , R.queryString "from" f
                     , R.queryOpInt "limit" limit
                     , R.queryOpString "to" to
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO1.messagesResponseDecoder
 
@@ -114,6 +117,7 @@ getMessagesV3 { direction, filter, from, limit, roomId, to } =
                     , R.queryOpInt "limit" limit
                     , R.queryOpString "filter" filter
                     , R.queryOpString "to" to
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO1.messagesResponseDecoder
 
@@ -134,6 +138,7 @@ getMessagesV4 { direction, filter, from, limit, roomId, to } =
                     , R.queryOpInt "limit" limit
                     , R.queryOpString "filter" filter
                     , R.queryOpString "to" to
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO2.messagesResponseDecoder
 
@@ -154,6 +159,7 @@ getMessagesV5 { direction, filter, from, limit, roomId, to } =
                     , R.queryOpInt "limit" limit
                     , R.queryOpString "filter" filter
                     , R.queryOpString "to" to
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO3.messagesResponseDecoder
 
@@ -174,6 +180,7 @@ getMessagesV6 { direction, filter, from, limit, roomId, to } =
                     , R.queryOpInt "limit" limit
                     , R.queryOpString "filter" filter
                     , R.queryOpString "to" to
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO3.messagesResponseDecoder
 
@@ -194,6 +201,7 @@ getMessagesV7 { direction, filter, from, limit, roomId, to } =
                     , R.queryOpInt "limit" limit
                     , R.queryOpString "filter" filter
                     , R.queryOpString "to" to
+                    , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
                     ]
                 >> R.toTask SO4.messagesResponseDecoder
 
@@ -212,5 +220,6 @@ getMessagesV8 { direction, filter, from, limit, roomId, to } =
             , R.queryOpInt "limit" limit
             , R.queryOpString "filter" filter
             , R.queryOpString "to" to
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.notInRoom })
             ]
         >> R.toTask SO4.messagesResponseDecoder

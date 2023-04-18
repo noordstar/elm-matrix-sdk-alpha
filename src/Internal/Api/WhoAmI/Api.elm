@@ -4,6 +4,7 @@ import Internal.Api.Request as R
 import Internal.Api.WhoAmI.V1.SpecObjects as SO1
 import Internal.Api.WhoAmI.V2.SpecObjects as SO2
 import Internal.Api.WhoAmI.V3.SpecObjects as SO3
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
@@ -28,19 +29,34 @@ type alias WhoAmIOutputV3 =
 whoAmIV1 : WhoAmIInputV1 -> Context { a | accessToken : (), baseUrl : () } -> Task X.Error WhoAmIOutputV1
 whoAmIV1 _ =
     R.callApi "GET" "/_matrix/client/r0/account/whoami"
-        >> R.withAttributes [ R.accessToken ]
+        >> R.withAttributes
+            [ R.accessToken
+            , R.onStatusCode 401 (X.M_UNKNOWN_TOKEN { error = Just SE.accessTokenNotRecognized, soft_logout = Nothing })
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.appserviceCannotMasquerade })
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
+            ]
         >> R.toTask SO1.whoAmIResponseDecoder
 
 
 whoAmIV2 : WhoAmIInputV1 -> Context { a | accessToken : (), baseUrl : () } -> Task X.Error WhoAmIOutputV2
 whoAmIV2 _ =
     R.callApi "GET" "/_matrix/client/v3/account/whoami"
-        >> R.withAttributes [ R.accessToken ]
+        >> R.withAttributes
+            [ R.accessToken
+            , R.onStatusCode 401 (X.M_UNKNOWN_TOKEN { error = Just SE.accessTokenNotRecognized, soft_logout = Nothing })
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.appserviceCannotMasquerade })
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
+            ]
         >> R.toTask SO2.whoAmIResponseDecoder
 
 
 whoAmIV3 : WhoAmIInputV1 -> Context { a | accessToken : (), baseUrl : () } -> Task X.Error WhoAmIOutputV3
 whoAmIV3 _ =
     R.callApi "GET" "/_matrix/client/v3/account/whoami"
-        >> R.withAttributes [ R.accessToken ]
+        >> R.withAttributes
+            [ R.accessToken
+            , R.onStatusCode 401 (X.M_UNKNOWN_TOKEN { error = Just SE.accessTokenNotRecognized, soft_logout = Nothing })
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.appserviceCannotMasquerade })
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
+            ]
         >> R.toTask SO3.whoAmIResponseDecoder

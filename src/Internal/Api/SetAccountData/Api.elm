@@ -1,6 +1,7 @@
 module Internal.Api.SetAccountData.Api exposing (..)
 
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
@@ -33,6 +34,9 @@ setAccountDataV1 { content, eventType, roomId } context =
             , R.replaceInUrl "type" eventType
             , R.replaceInUrl "userId" (Context.getUserId context)
             , R.fullBody content
+            , R.onStatusCode 400 (X.M_INVALID_PARAM { error = Just SE.invalidRequest })
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.accountDataSetNotAllowed })
+            , R.onStatusCode 405 (X.M_BAD_JSON { error = Just SE.accountDataControlledByServer })
             ]
         >> R.toTask (D.map (always ()) D.value)
         |> (|>) context
@@ -53,6 +57,9 @@ setAccountDataV2 { content, eventType, roomId } context =
             , R.replaceInUrl "type" eventType
             , R.replaceInUrl "userId" (Context.getUserId context)
             , R.fullBody content
+            , R.onStatusCode 400 (X.M_INVALID_PARAM { error = Just SE.invalidRequest })
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.accountDataSetNotAllowed })
+            , R.onStatusCode 405 (X.M_BAD_JSON { error = Just SE.accountDataControlledByServer })
             ]
         >> R.toTask (D.map (always ()) D.value)
         |> (|>) context

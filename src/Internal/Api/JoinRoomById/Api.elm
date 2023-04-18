@@ -1,6 +1,7 @@
 module Internal.Api.JoinRoomById.Api exposing (..)
 
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context, VBA)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
@@ -25,6 +26,8 @@ joinRoomByIdV1 { roomId } =
         >> R.withAttributes
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.joinNotAllowed })
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask (D.map (\r -> { roomId = r }) (D.field "room_id" D.string))
 
@@ -36,5 +39,7 @@ joinRoomByIdV2 { roomId, reason } =
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
             , R.bodyOpString "reason" reason
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.joinNotAllowed })
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask (D.map (\r -> { roomId = r }) (D.field "room_id" D.string))

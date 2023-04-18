@@ -1,5 +1,9 @@
 module Internal.Api.Request exposing (..)
 
+{-| The request module builds HTTP tasks that are designed around calling the Matrix API.
+-}
+
+import Dict exposing (Dict)
 import Http
 import Internal.Api.Helpers as Helpers
 import Internal.Tools.Context as Context exposing (Context)
@@ -31,6 +35,7 @@ type ContextAttr
     | NoAttr
     | QueryParam UrlBuilder.QueryParameter
     | ReplaceInUrl String String
+    | StatusCodeResponse Int X.Error
     | Timeout Float
     | UrlPath String
 
@@ -97,7 +102,19 @@ toTask decoder (ApiCall data) =
                         |> E.object
                     )
                 |> Http.jsonBody
-        , resolver = rawApiCallResolver (always decoder)
+        , resolver =
+            data.attributes
+                |> List.filterMap
+                    (\attr ->
+                        case attr of
+                            StatusCodeResponse code err ->
+                                Just ( code, err )
+
+                            _ ->
+                                Nothing
+                    )
+                |> Dict.fromList
+                |> rawApiCallResolver decoder
         , timeout =
             data.attributes
                 |> List.filterMap
@@ -260,6 +277,14 @@ fullBody value _ =
     FullBody value
 
 
+{-| If the Matrix API does not fit the Matrix spec but returns the following status code,
+you may interpret it as the given error.
+-}
+onStatusCode : Int -> X.ServerError -> Attribute a
+onStatusCode code err _ =
+    StatusCodeResponse code (X.ServerException err)
+
+
 queryBool : String -> Bool -> Attribute a
 queryBool key value _ =
     (if value then
@@ -332,8 +357,8 @@ withTransactionId =
     Context.getTransactionId >> ReplaceInUrl "txnId"
 
 
-rawApiCallResolver : (Int -> D.Decoder a) -> Http.Resolver X.Error a
-rawApiCallResolver decoder =
+rawApiCallResolver : D.Decoder a -> Dict Int X.Error -> Http.Resolver X.Error a
+rawApiCallResolver decoder statusCodeErrors =
     Http.stringResolver
         (\response ->
             case response of
@@ -353,15 +378,19 @@ rawApiCallResolver decoder =
                         |> Err
 
                 Http.BadStatus_ metadata body ->
-                    decodeServerResponse (decoder metadata.statusCode) body
+                    statusCodeErrors
+                        |> Dict.get metadata.statusCode
+                        |> decodeServerResponse decoder body
 
                 Http.GoodStatus_ metadata body ->
-                    decodeServerResponse (decoder metadata.statusCode) body
+                    statusCodeErrors
+                        |> Dict.get metadata.statusCode
+                        |> decodeServerResponse decoder body
         )
 
 
-decodeServerResponse : D.Decoder a -> String -> Result X.Error a
-decodeServerResponse decoder body =
+decodeServerResponse : D.Decoder a -> String -> Maybe X.Error -> Result X.Error a
+decodeServerResponse decoder body statusCodeError =
     case D.decodeString D.value body of
         Err e ->
             e
@@ -378,11 +407,17 @@ decodeServerResponse decoder body =
                 Err err ->
                     -- The response is not valid!
                     -- Check if it is a valid error type as defined in spec.
-                    case D.decodeString X.errorCatches body of
-                        Ok v ->
+                    case ( D.decodeString X.errorCatches body, statusCodeError ) of
+                        ( Ok v, _ ) ->
                             Err (X.ServerException v)
 
-                        Err _ ->
+                        -- It does not compute as a valid spec error. Therefore,
+                        -- we will look at its status code before ultimately giving up
+                        -- on the validity of the response.
+                        ( Err _, Just sce ) ->
+                            Err sce
+
+                        ( Err _, Nothing ) ->
                             err
                                 |> D.errorToString
                                 |> X.ServerReturnsBadJSON

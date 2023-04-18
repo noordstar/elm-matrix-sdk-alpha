@@ -1,6 +1,7 @@
 module Internal.Api.Ban.Api exposing (..)
 
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
@@ -26,6 +27,7 @@ banV1 { reason, roomId, userId } =
             , R.replaceInUrl "roomId" roomId
             , R.bodyOpString "reason" reason
             , R.bodyString "user_id" userId
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.banNotAllowed })
             ]
         >> R.toTask (D.map (always ()) D.value)
 
@@ -38,5 +40,6 @@ banV2 { reason, roomId, userId } =
             , R.replaceInUrl "roomId" roomId
             , R.bodyOpString "reason" reason
             , R.bodyString "user_id" userId
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.banNotAllowed })
             ]
         >> R.toTask (D.map (always ()) D.value)

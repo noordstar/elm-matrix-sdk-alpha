@@ -1,6 +1,7 @@
 module Internal.Api.Invite.Api exposing (..)
 
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Decode as D
@@ -31,6 +32,7 @@ inviteV1 { roomId, userId } =
             [ R.accessToken
             , R.replaceInUrl "roomId" roomId
             , R.bodyString "user_id" userId
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.inviteNotAllowed })
             ]
         >> R.toTask (D.map (always ()) D.value)
 
@@ -43,5 +45,8 @@ inviteV2 { reason, roomId, userId } =
             , R.replaceInUrl "roomId" roomId
             , R.bodyString "user_id" userId
             , R.bodyOpString "reason" reason
+            , R.onStatusCode 400 (X.M_INVALID_PARAM { error = Just SE.invalidRequest })
+            , R.onStatusCode 403 (X.M_FORBIDDEN { error = Just SE.inviteNotAllowed })
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask (D.map (always ()) D.value)

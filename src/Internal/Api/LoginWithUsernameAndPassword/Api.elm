@@ -6,6 +6,7 @@ import Internal.Api.LoginWithUsernameAndPassword.V3.SpecObjects as SO3
 import Internal.Api.LoginWithUsernameAndPassword.V4.SpecObjects as SO4
 import Internal.Api.LoginWithUsernameAndPassword.V5.Login as SO5
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Json.Encode as E
@@ -53,6 +54,7 @@ loginWithUsernameAndPasswordV1 { username, password } =
             [ R.bodyString "password" password
             , R.bodyString "type" "m.login.password"
             , R.bodyString "user" username
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask SO1.loggedInResponseDecoder
 
@@ -66,6 +68,7 @@ loginWithUsernameAndPasswordV2 { deviceId, initialDeviceDisplayName, password, u
             , R.bodyString "password" password
             , R.bodyOpString "device_id" deviceId
             , R.bodyOpString "initial_device_display_name" initialDeviceDisplayName
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask SO2.loggedInResponseDecoder
 
@@ -83,6 +86,7 @@ loginWithUsernameAndPasswordV3 { deviceId, initialDeviceDisplayName, password, u
               ]
                 |> E.object
                 |> R.bodyValue "identifier"
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask SO3.loggedInResponseDecoder
 
@@ -100,6 +104,7 @@ loginWithUsernameAndPasswordV4 { deviceId, initialDeviceDisplayName, password, u
               ]
                 |> E.object
                 |> R.bodyValue "identifier"
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask SO4.loggedInResponseDecoder
 
@@ -117,6 +122,7 @@ loginWithUsernameAndPasswordV5 { deviceId, initialDeviceDisplayName, password, u
               ]
                 |> E.object
                 |> R.bodyValue "identifier"
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask SO4.loggedInResponseDecoder
 
@@ -135,21 +141,6 @@ loginWithUsernameAndPasswordV6 { deviceId, initialDeviceDisplayName, password, u
               ]
                 |> E.object
                 |> R.bodyValue "identifier"
+            , R.onStatusCode 429 (X.M_LIMIT_EXCEEDED { error = Just SE.ratelimited, retryAfterMs = Nothing })
             ]
         >> R.toTask SO5.loggedInResponseDecoder
-
-
-
--- loginWithUsernameAndPasswordV5 : LoginWithUsernameAndPasswordInputV1 -> Context { a | baseUrl : () } -> Task X.Error LoginWithUsernameAndPasswordOutputV5
--- loginWithUsernameAndPasswordV5 { username, password } =
---     R.callApi "POST" "/_matrix/client/v3/login"
---         >> R.withAttributes
---             [ [ ( "type", E.string "m.id.user" )
---               , ( "user", E.string username )
---               ]
---                 |> E.object
---                 |> R.bodyValue "identifier"
---             , R.bodyString "password" password
---             , R.bodyString "type" "m.login.password"
---             ]
---         >> R.toTask SO.loggedInResponseDecoder

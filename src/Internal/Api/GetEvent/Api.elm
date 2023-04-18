@@ -2,6 +2,7 @@ module Internal.Api.GetEvent.Api exposing (..)
 
 import Internal.Api.GetEvent.V1.SpecObjects as SO1
 import Internal.Api.Request as R
+import Internal.Config.SpecErrors as SE
 import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
@@ -24,5 +25,6 @@ getEventInputV1 data context =
             [ R.accessToken
             , R.replaceInUrl "eventId" (Context.getSentEvent context)
             , R.replaceInUrl "roomId" data.roomId
+            , R.onStatusCode 404 (X.M_NOT_FOUND { error = Just SE.eventNotFound })
             ]
         |> R.toTask SO1.clientEventDecoder
