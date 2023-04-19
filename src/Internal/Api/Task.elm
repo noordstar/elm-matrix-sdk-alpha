@@ -13,9 +13,9 @@ import Internal.Api.JoinedMembers.Main exposing (JoinedMembersInput)
 import Internal.Api.Leave.Main exposing (LeaveInput)
 import Internal.Api.SendStateKey.Main exposing (SendStateKeyInput)
 import Internal.Api.SetAccountData.Main exposing (SetAccountInput)
-import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
+import Internal.Api.Snackbar as Snackbar
 import Internal.Api.Sync.Main exposing (SyncInput)
-import Internal.Api.VaultUpdate as C
+import Internal.Api.VaultUpdate as C exposing (Vnackbar)
 import Json.Encode as E
 
 
@@ -29,47 +29,55 @@ type alias EventInput =
     }
 
 
-getEvent : EventInput -> Snackbar a -> FutureTask
+getEvent : EventInput -> Vnackbar a -> FutureTask
 getEvent { eventId, roomId } cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.withSentEvent eventId)
-        |> Chain.andThen (C.getEvent { roomId = roomId })
-        |> C.toTask
+    C.toTask
+        ("Get event `" ++ eventId ++ "` from room `" ++ roomId ++ "`")
+        (C.makeVBA
+            >> Chain.andThen (C.withSentEvent eventId)
+            >> Chain.andThen (C.getEvent { roomId = roomId })
+        )
+        (Snackbar.withoutContent cred)
 
 
-getMessages : GetMessagesInput -> Snackbar a -> FutureTask
+getMessages : GetMessagesInput -> Vnackbar a -> FutureTask
 getMessages data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.getMessages data)
-        |> C.toTask
+    C.toTask
+        ("Get messages from room `" ++ data.roomId ++ "`")
+        (C.makeVBA >> Chain.andThen (C.getMessages data))
+        (Snackbar.withoutContent cred)
 
 
-invite : InviteInput -> Snackbar a -> FutureTask
+invite : InviteInput -> Vnackbar a -> FutureTask
 invite data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.invite data)
-        |> C.toTask
+    C.toTask
+        ("Invite user " ++ data.userId ++ " to room " ++ data.roomId)
+        (C.makeVBA >> Chain.andThen (C.invite data))
+        (Snackbar.withoutContent cred)
 
 
-joinedMembers : JoinedMembersInput -> Snackbar a -> FutureTask
+joinedMembers : JoinedMembersInput -> Vnackbar a -> FutureTask
 joinedMembers data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.joinedMembers data)
-        |> C.toTask
+    C.toTask
+        ("Get a list of joined members from room " ++ data.roomId)
+        (C.makeVBA >> Chain.andThen (C.joinedMembers data))
+        (Snackbar.withoutContent cred)
 
 
-joinRoomById : JoinRoomByIdInput -> Snackbar a -> FutureTask
+joinRoomById : JoinRoomByIdInput -> Vnackbar a -> FutureTask
 joinRoomById data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.joinRoomById data)
-        |> C.toTask
+    C.toTask
+        ("Join room " ++ data.roomId ++ "by its room id")
+        (C.makeVBA >> Chain.andThen (C.joinRoomById data))
+        (Snackbar.withoutContent cred)
 
 
-leave : LeaveInput -> Snackbar a -> FutureTask
+leave : LeaveInput -> Vnackbar a -> FutureTask
 leave data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.leave data)
-        |> C.toTask
+    C.toTask
+        ("Leave room " ++ data.roomId)
+        (C.makeVBA >> Chain.andThen (C.leave data))
+        (Snackbar.withoutContent cred)
 
 
 type alias RedactInput =
@@ -80,10 +88,11 @@ type alias RedactInput =
     }
 
 
-redact : RedactInput -> Snackbar a -> FutureTask
+redact : RedactInput -> Vnackbar a -> FutureTask
 redact { eventId, extraTransactionNoise, reason, roomId } cred =
-    cred
-        |> C.makeVBAT
+    C.toTask
+        ("Redact event " ++ eventId ++ " from room " ++ roomId)
+        (C.makeVBAT
             (\now ->
                 [ Hash.fromInt now
                 , Hash.fromString eventId
@@ -94,11 +103,12 @@ redact { eventId, extraTransactionNoise, reason, roomId } cred =
                     |> List.foldl Hash.independent (Hash.fromString "redact")
                     |> Hash.toString
             )
-        |> Chain.andThen (C.redact { eventId = eventId, reason = reason, roomId = roomId })
-        |> Chain.andThen (C.withSentEvent eventId)
-        |> Chain.andThen
-            (Chain.maybe <| C.getEvent { roomId = roomId })
-        |> C.toTask
+            >> Chain.andThen (C.redact { eventId = eventId, reason = reason, roomId = roomId })
+            >> Chain.andThen (C.withSentEvent eventId)
+            >> Chain.andThen
+                (Chain.maybe <| C.getEvent { roomId = roomId })
+        )
+        (Snackbar.withoutContent cred)
 
 
 type alias SendMessageEventInput =
@@ -109,10 +119,11 @@ type alias SendMessageEventInput =
     }
 
 
-sendMessageEvent : SendMessageEventInput -> Snackbar a -> FutureTask
+sendMessageEvent : SendMessageEventInput -> Vnackbar a -> FutureTask
 sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
-    cred
-        |> C.makeVBAT
+    C.toTask
+        ("Send a message event to room " ++ roomId ++ " with event type " ++ eventType)
+        (C.makeVBAT
             (\now ->
                 [ Hash.fromInt now
                 , Hash.fromString (E.encode 0 content)
@@ -123,41 +134,59 @@ sendMessageEvent { content, eventType, extraTransactionNoise, roomId } cred =
                     |> List.foldl Hash.independent (Hash.fromString "send message")
                     |> Hash.toString
             )
-        |> Chain.andThen C.getTimestamp
-        |> Chain.andThen (C.sendMessageEvent { content = content, eventType = eventType, roomId = roomId })
-        |> Chain.andThen
-            (Chain.maybe <| C.getEvent { roomId = roomId })
-        |> C.toTask
+            >> Chain.andThen C.getTimestamp
+            >> Chain.andThen (C.sendMessageEvent { content = content, eventType = eventType, roomId = roomId })
+            >> Chain.andThen
+                (Chain.maybe <| C.getEvent { roomId = roomId })
+        )
+        (Snackbar.withoutContent cred)
 
 
-sendStateEvent : SendStateKeyInput -> Snackbar a -> FutureTask
+sendStateEvent : SendStateKeyInput -> Vnackbar a -> FutureTask
 sendStateEvent data cred =
-    C.makeVBA cred
-        |> Chain.andThen C.getTimestamp
-        |> Chain.andThen (C.sendStateEvent data)
-        |> Chain.andThen
-            (Chain.maybe <| C.getEvent { roomId = data.roomId })
-        |> C.toTask
+    C.toTask
+        ("Send a state event to room " ++ data.roomId ++ " with event type " ++ data.eventType)
+        (C.makeVBA
+            >> Chain.andThen C.getTimestamp
+            >> Chain.andThen (C.sendStateEvent data)
+            >> Chain.andThen
+                (Chain.maybe <| C.getEvent { roomId = data.roomId })
+        )
+        (Snackbar.withoutContent cred)
 
 
-setAccountData : SetAccountInput -> Snackbar a -> FutureTask
+setAccountData : SetAccountInput -> Vnackbar a -> FutureTask
 setAccountData data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.setAccountData data)
-        |> C.toTask
+    C.toTask
+        ("Set account data "
+            ++ data.eventType
+            ++ (case data.roomId of
+                    Just r ->
+                        " in room " ++ r
+
+                    Nothing ->
+                        " in main account"
+               )
+        )
+        (C.makeVBA >> Chain.andThen (C.setAccountData data))
+        (Snackbar.withoutContent cred)
 
 
-sync : SyncInput -> Snackbar a -> FutureTask
+sync : SyncInput -> Vnackbar a -> FutureTask
 sync data cred =
-    C.makeVBA cred
-        |> Chain.andThen (C.sync data)
-        |> C.toTask
+    C.toTask
+        "Sync Vault"
+        (C.makeVBA >> Chain.andThen (C.sync data))
+        (Snackbar.withoutContent cred)
 
 
-loginMaybeSync : SyncInput -> Snackbar a -> FutureTask
+loginMaybeSync : SyncInput -> Vnackbar a -> FutureTask
 loginMaybeSync data cred =
-    C.makeVB cred
-        |> Chain.andThen (C.accessToken (Snackbar.removedAccessToken cred))
-        |> Chain.andThen
-            (Chain.maybe <| C.sync data)
-        |> C.toTask
+    C.toTask
+        "Log in again, then sync Vault"
+        (C.makeVB
+            >> Chain.andThen (C.accessToken (Snackbar.removedAccessToken cred))
+            >> Chain.andThen
+                (Chain.maybe <| C.sync data)
+        )
+        (Snackbar.withoutContent cred)

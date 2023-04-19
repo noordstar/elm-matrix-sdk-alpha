@@ -10,8 +10,9 @@ resend other events or forward them elsewhere.
 import Internal.Api.GetEvent.Main as GetEvent
 import Internal.Api.GetEvent.V1.SpecObjects as GetEventSO
 import Internal.Api.GetMessages.V4.SpecObjects as GetMessagesSO
-import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
+import Internal.Api.Snackbar as Snackbar
 import Internal.Api.Sync.V2.SpecObjects as SyncSO
+import Internal.Api.VaultUpdate exposing (Vnackbar)
 import Internal.Tools.Timestamp exposing (Timestamp)
 import Internal.Values.Event as Internal
 import Json.Encode as E
@@ -20,7 +21,7 @@ import Json.Encode as E
 {-| The central event type. This type will be used by the user and will be directly interacted with.
 -}
 type alias Event =
-    Snackbar Internal.IEvent
+    Vnackbar Internal.IEvent
 
 
 {-| Create an internal event type from an API endpoint event object.

@@ -96,18 +96,18 @@ an empty state key, and decoding the content.
 
 -}
 description : Room -> Maybe String
-description =
-    stateEvent { eventType = "m.room.topic", stateKey = "" }
-        >> Maybe.map Event.content
-        >> Maybe.andThen (D.decodeValue (D.field "topic" D.string) >> Result.toMaybe)
+description room =
+    stateEvent { eventType = "m.room.topic", stateKey = "", room = room }
+        |> Maybe.map Event.content
+        |> Maybe.andThen (D.decodeValue (D.field "topic" D.string) >> Result.toMaybe)
 
 
 {-| Starting from the most recent events, look for more events. Effectively,
 this inserts more events at the start of the `[mostRecentEvents](#mostRecentEvents)` function's output list.
 -}
-findOlderEvents : { limit : Maybe Int, room : Room } -> Task X.Error VaultUpdate
-findOlderEvents { limit, room } =
-    Internal.findOlderEvents { limit = limit } room
+findOlderEvents : { limit : Maybe Int, room : Room, onResponse : VaultUpdate -> msg } -> Cmd msg
+findOlderEvents { limit, room, onResponse } =
+    Internal.findOlderEvents { limit = limit, onResponse = onResponse } room
 
 
 {-| This function will always display the most recent events from the Matrix room.
@@ -146,17 +146,17 @@ an empty state key, and decoding the content.
 
 -}
 name : Room -> Maybe String
-name =
-    stateEvent { eventType = "m.room.name", stateKey = "" }
-        >> Maybe.map Event.content
-        >> Maybe.andThen (D.decodeValue (D.field "name" D.string) >> Result.toMaybe)
+name room =
+    stateEvent { eventType = "m.room.name", stateKey = "", room = room }
+        |> Maybe.map Event.content
+        |> Maybe.andThen (D.decodeValue (D.field "name" D.string) >> Result.toMaybe)
 
 
 {-| Get a state event in the room.
 -}
-stateEvent : { eventType : String, stateKey : String } -> Room -> Maybe Event.Event
-stateEvent =
-    Internal.getStateEvent
+stateEvent : { eventType : String, room : Room, stateKey : String } -> Maybe Event.Event
+stateEvent { eventType, room, stateKey } =
+    Internal.getStateEvent { eventType = eventType, stateKey = stateKey } room
 
 
 {-| Every room has a unique Matrix ID. You can later use this room ID to find the same room back.
@@ -171,14 +171,14 @@ roomId =
     task =
         room
             |> sendMessage "Hello, world!"
-            |> Task.attempt toMsg
+            |> Task.attempt onResponse
 
 **Hint:** are you trying to send multiple messages at the same time? You might want to use `sendMessages` instead.
 
 -}
-sendMessage : String -> Room -> Task X.Error VaultUpdate
-sendMessage =
-    Internal.sendMessage
+sendMessage : { room : Room, onResponse : VaultUpdate -> msg, text : String } -> Cmd msg
+sendMessage { room, onResponse, text } =
+    Internal.sendMessage { text = text, onResponse = onResponse } room
 
 
 {-| Send multiple unformatted text messages to a room.
@@ -201,9 +201,9 @@ If you're intending to send the same message multiple times, this function will 
     Task.sequence <| sendMessages [ "Hello, world!", "Hello, world!" ]
 
 -}
-sendMessages : List String -> Room -> List (Task X.Error VaultUpdate)
-sendMessages =
-    Internal.sendMessages
+sendMessages : { room : Room, textPieces : List String, onResponse : VaultUpdate -> msg } -> Cmd msg
+sendMessages { room, textPieces, onResponse } =
+    Internal.sendMessages { textPieces = textPieces, onResponse = onResponse } room
 
 
 {-| Send a custom event to the Matrix room.
@@ -223,7 +223,7 @@ Keep in mind that this function is not safe to use if you're sending exactly the
         ]
 
 -}
-sendOneEvent : { content : D.Value, eventType : String, stateKey : Maybe String } -> Room -> Task X.Error VaultUpdate
+sendOneEvent : { content : D.Value, eventType : String, room : Room, stateKey : Maybe String, onResponse : VaultUpdate -> msg } -> Cmd msg
 sendOneEvent =
     Internal.sendEvent
 
@@ -249,7 +249,7 @@ Keep in mind that this function doesn't send the events in order, it just makes 
         |> Task.sequence
 
 -}
-sendMultipleEvents : List { content : D.Value, eventType : String, stateKey : Maybe String } -> Room -> List (Task X.Error VaultUpdate)
+sendMultipleEvents : List { content : D.Value, eventType : String, stateKey : Maybe String, onResponse : VaultUpdate -> msg } -> Room -> Cmd msg
 sendMultipleEvents =
     Internal.sendEvents
 
@@ -259,6 +259,6 @@ sendMultipleEvents =
 The homeserver will save this information on this room, but it will only be visible to the user who sent it.
 
 -}
-setAccountData : String -> D.Value -> Room -> Task X.Error VaultUpdate
+setAccountData : { key : String, value : D.Value, room : Room, onResponse : VaultUpdate -> msg } -> Cmd msg
 setAccountData =
     Internal.setAccountData

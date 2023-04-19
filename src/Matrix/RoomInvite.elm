@@ -1,6 +1,6 @@
 module Matrix.RoomInvite exposing
-    ( RoomInvite, accept, reject, acceptWithReason, rejectWithReason
-    , roomId, RoomInviteEvent, getAllEvents--, getEvent
+    ( RoomInvite, accept, reject
+    , roomId, RoomInviteEvent, getEvent, getAllEvents
     , sender, stateKey, eventType, content
     )
 
@@ -11,7 +11,7 @@ you can accept them, reject them or inspect them for further information.
 
 # Invitations
 
-@docs RoomInvite, accept, reject, acceptWithReason, rejectWithReason
+@docs RoomInvite, accept, reject
 
 
 # Exploring invitations
@@ -46,30 +46,16 @@ type alias RoomInvite =
 
 {-| If you would like to join a room, you can accept the offer.
 -}
-accept : RoomInvite -> Task X.Error VaultUpdate
-accept invite =
-    Internal.accept { invite = invite, reason = Nothing }
+accept : { invite : RoomInvite, onResponse : VaultUpdate -> msg, reason : Maybe String } -> Cmd msg
+accept =
+    Internal.accept
 
 
 {-| If you don't want to join the room, you can reject the offer.
 -}
-reject : RoomInvite -> Task X.Error VaultUpdate
-reject invite =
-    Internal.reject { invite = invite, reason = Nothing }
-
-
-{-| If the Matrix server supports it, you can add a reason for accepting an invite.
--}
-acceptWithReason : String -> RoomInvite -> Task X.Error VaultUpdate
-acceptWithReason reason invite =
-    Internal.accept { invite = invite, reason = Just reason }
-
-
-{-| If the Matrix server supports it, you can add a reason for rejecting an invite.
--}
-rejectWithReason : String -> RoomInvite -> Task X.Error VaultUpdate
-rejectWithReason reason invite =
-    Internal.reject { invite = invite, reason = Just reason }
+reject : { invite : RoomInvite, onResponse : VaultUpdate -> msg, reason : Maybe String } -> Cmd msg
+reject =
+    Internal.reject
 
 
 {-| Get the room id of the invited room.
@@ -117,15 +103,11 @@ stateKey =
     IR.stateKey
 
 
-
--- -- TODO: Fix this
--- {-| Get a specific event with a specific event content type and state key, if it exists.
--- -}
--- getEvent : { eventType : String, stateKey : String } -> RoomInvite -> Maybe RoomInviteEvent
--- getEvent data invite =
---     invite
---         |> Internal.withoutCredentials
---         |> IR.getEvent data
+{-| Get a specific event with a specific event content type and state key, if it exists.
+-}
+getEvent : { eventType : String, stateKey : String } -> RoomInvite -> Maybe RoomInviteEvent
+getEvent =
+    Internal.getEvent
 
 
 {-| Instead of looking at just one event, get all events in a list.

@@ -1,4 +1,4 @@
-module Internal.Tools.Exceptions exposing (ClientError(..), Error(..), ServerError(..), errorCatches, errorToString)
+module Internal.Tools.Exceptions exposing (ClientError(..), ContextError(..), Error(..), ServerError(..), errorCatches, errorToString)
 
 {-| This module contains all potential errors that may be passed around in the SDK.
 -}
@@ -23,6 +23,7 @@ type Error
     = InternetException Http.Error
     | SDKException ClientError
     | ServerException ServerError
+    | ContextFailed ContextError
     | UnsupportedSpecVersion
 
 
@@ -31,8 +32,6 @@ notices some internal inconsistencies or if it cannot interpret the server's
 input.
 
   - `ServerReturnsBadJSON` The homeserver sent JSON that does not parse.
-  - `CouldntGetTimestamp` The Elm core somehow failed to get the current
-    Unix timestamp.
   - `NotSupportedYet` Some part of the SDK is intended to be implemented - but it isn't yet.
   - `NoAccessToken` There is no more access token and no way of getting a new one.
 
@@ -41,6 +40,13 @@ type ClientError
     = ServerReturnsBadJSON String
     | NotSupportedYet String
     | NoAccessToken
+
+
+{-| Sometimes, the Context failed to be gathered. In such a case, this function will tell you which one went wrong.
+-}
+type ContextError
+    = FailedVersions Error
+    | FailedAccessToken Error
 
 
 {-| Potential error codes that the server may return. If the error is not a

@@ -4,12 +4,11 @@ module Internal.Room exposing (..)
 -}
 
 import Dict
-import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
+import Internal.Api.Snackbar as Snackbar
 import Internal.Api.Sync.V2.SpecObjects as Sync
 import Internal.Api.Task as Api
-import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
+import Internal.Api.VaultUpdate exposing (VaultUpdate(..), Vnackbar)
 import Internal.Event as Event exposing (Event)
-import Internal.Tools.Exceptions as X
 import Internal.Tools.Hashdict as Hashdict
 import Internal.Tools.SpecEnums as Enums
 import Internal.Values.Event as IEvent
@@ -29,7 +28,7 @@ to it.
 
 -}
 type alias Room =
-    Snackbar Internal.IRoom
+    Vnackbar Internal.IRoom
 
 
 {-| Create a new object from a joined room.
@@ -121,11 +120,11 @@ getStateEvent data =
 
 {-| Get older events from the Matrix API.
 -}
-findOlderEvents : { limit : Maybe Int } -> Room -> Task X.Error VaultUpdate
-findOlderEvents { limit } room =
+findOlderEvents : { limit : Maybe Int, onResponse : VaultUpdate -> msg } -> Room -> Cmd msg
+findOlderEvents { limit, onResponse } room =
     case Internal.latestGap (Snackbar.withoutCandy room) of
         Nothing ->
-            Task.succeed (MultipleUpdates [])
+            Task.succeed (MultipleUpdates []) |> Task.perform onResponse
 
         Just { from, to } ->
             Api.getMessages
@@ -137,6 +136,7 @@ findOlderEvents { limit } room =
                 , to = from
                 }
                 room
+                |> Task.perform onResponse
 
 
 {-| Get the most recent events.
@@ -155,8 +155,8 @@ roomId =
 
 {-| Sends a new event to the Matrix room associated with the given `Room`.
 -}
-sendEvent : { content : E.Value, eventType : String, stateKey : Maybe String } -> Room -> Task X.Error VaultUpdate
-sendEvent { eventType, content, stateKey } room =
+sendEvent : { content : E.Value, eventType : String, stateKey : Maybe String, onResponse : VaultUpdate -> msg, room : Room } -> Cmd msg
+sendEvent { eventType, content, stateKey, onResponse, room } =
     case stateKey of
         Nothing ->
             Api.sendMessageEvent
@@ -166,6 +166,7 @@ sendEvent { eventType, content, stateKey } room =
                 , roomId = roomId room
                 }
                 room
+                |> Task.perform onResponse
 
         Just s ->
             Api.sendStateEvent
@@ -175,13 +176,14 @@ sendEvent { eventType, content, stateKey } room =
                 , roomId = roomId room
                 }
                 room
+                |> Task.perform onResponse
 
 
-sendEvents : List { content : E.Value, eventType : String, stateKey : Maybe String } -> Room -> List (Task X.Error VaultUpdate)
+sendEvents : List { content : E.Value, eventType : String, stateKey : Maybe String, onResponse : VaultUpdate -> msg } -> Room -> Cmd msg
 sendEvents events room =
     List.indexedMap Tuple.pair events
         |> List.map
-            (\( i, { eventType, content, stateKey } ) ->
+            (\( i, { eventType, content, stateKey, onResponse } ) ->
                 case stateKey of
                     Nothing ->
                         Api.sendMessageEvent
@@ -191,6 +193,7 @@ sendEvents events room =
                             , roomId = roomId room
                             }
                             room
+                            |> Task.perform onResponse
 
                     Just s ->
                         Api.sendStateEvent
@@ -200,13 +203,15 @@ sendEvents events room =
                             , roomId = roomId room
                             }
                             room
+                            |> Task.perform onResponse
             )
+        |> Cmd.batch
 
 
 {-| Sends a new text message to the Matrix room associated with the given `Room`.
 -}
-sendMessage : String -> Room -> Task X.Error VaultUpdate
-sendMessage text room =
+sendMessage : { text : String, onResponse : VaultUpdate -> msg } -> Room -> Cmd msg
+sendMessage { text, onResponse } room =
     Api.sendMessageEvent
         { content =
             E.object
@@ -218,11 +223,12 @@ sendMessage text room =
         , roomId = roomId room
         }
         room
+        |> Task.perform onResponse
 
 
-sendMessages : List String -> Room -> List (Task X.Error VaultUpdate)
-sendMessages pieces room =
-    pieces
+sendMessages : { textPieces : List String, onResponse : VaultUpdate -> msg } -> Room -> Cmd msg
+sendMessages { textPieces, onResponse } room =
+    textPieces
         |> List.indexedMap Tuple.pair
         |> List.map
             (\( i, piece ) ->
@@ -238,17 +244,21 @@ sendMessages pieces room =
                     }
                     room
             )
+        |> List.map (Task.perform onResponse)
+        |> Cmd.batch
 
 
 {-| Leave this room.
 -}
-leave : Room -> Task X.Error VaultUpdate
-leave room =
+leave : (VaultUpdate -> msg) -> Room -> Cmd msg
+leave onResponse room =
     Api.leave { roomId = roomId room, reason = Nothing } room
+        |> Task.perform onResponse
 
 
 {-| Set account data.
 -}
-setAccountData : String -> E.Value -> Room -> Task X.Error VaultUpdate
-setAccountData key value room =
+setAccountData : { key : String, value : E.Value, onResponse : VaultUpdate -> msg, room : Room } -> Cmd msg
+setAccountData { key, value, onResponse, room } =
     Api.setAccountData { content = value, eventType = key, roomId = Just (roomId room) } room
+        |> Task.perform onResponse

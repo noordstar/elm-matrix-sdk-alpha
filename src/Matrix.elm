@@ -95,7 +95,7 @@ Your vault is always a snapshot of changes since the last time you updated it.
 If you'd like to update it once more, simply run this function and the API will make sure that your Vault has the latest changes.
 
 -}
-sync : Vault -> Task X.Error VaultUpdate
+sync : Vault -> (VaultUpdate -> msg) -> Cmd msg
 sync =
     Internal.Vault.sync
 
@@ -146,13 +146,13 @@ username =
 
 {-| Join a Matrix room based on its room id.
 -}
-joinRoomById : String -> Vault -> Task X.Error VaultUpdate
+joinRoomById : { roomId : String, onResponse : VaultUpdate -> msg, vault : Vault } -> Cmd msg
 joinRoomById =
     Internal.Vault.joinRoomById
 
 
 {-| Update the user's personal account data. This saves the information on the homeserver's side and keeps it available for future use.
 -}
-setAccountData : String -> E.Value -> Vault -> Task X.Error VaultUpdate
+setAccountData : { key : String, value : E.Value, onResponse : VaultUpdate -> msg, vault : Vault } -> Cmd msg
 setAccountData =
     Internal.Vault.setAccountData

@@ -8,21 +8,20 @@ This file combines the internal functions with the API endpoints to create a ful
 -}
 
 import Dict
-import Internal.Api.Snackbar as Snackbar exposing (Snackbar)
+import Internal.Api.Snackbar as Snackbar
 import Internal.Api.Sync.Main exposing (SyncInput)
 import Internal.Api.Task as Api
-import Internal.Api.VaultUpdate exposing (VaultUpdate(..))
+import Internal.Api.VaultUpdate exposing (VaultUpdate(..), Vnackbar)
 import Internal.Event as Event
 import Internal.Invite as Invite
 import Internal.Room as Room
-import Internal.Tools.Exceptions as X
 import Internal.Tools.SpecEnums as Enums
 import Internal.Values.Room as IRoom
 import Internal.Values.RoomInvite exposing (IRoomInvite)
 import Internal.Values.StateManager as StateManager
 import Internal.Values.Vault as Internal
 import Json.Encode as E
-import Task exposing (Task)
+import Task
 
 
 {-| You can consider the `Vault` type as a large ring of keys,
@@ -31,7 +30,7 @@ If you pass the `Vault` into any function, then the library will look for
 the right keys and tokens to get the right information.
 -}
 type alias Vault =
-    Snackbar Internal.IVault
+    Vnackbar Internal.IVault
 
 
 {-| Get personal account data linked to an account.
@@ -100,9 +99,10 @@ insertRoom =
 
 {-| Join a Matrix room by its id.
 -}
-joinRoomById : String -> Vault -> Task X.Error VaultUpdate
-joinRoomById roomId vault =
+joinRoomById : { roomId : String, onResponse : VaultUpdate -> msg, vault : Vault } -> Cmd msg
+joinRoomById { roomId, onResponse, vault } =
     Api.joinRoomById { roomId = roomId, reason = Nothing } vault
+        |> Task.perform onResponse
 
 
 {-| Update the Vault type with new values
@@ -151,7 +151,6 @@ updateWith vaultUpdate vault =
                 Nothing ->
                     vault
 
-        -- TODO
         GetMessages input output ->
             let
                 prevBatch : Maybe String
@@ -185,25 +184,25 @@ updateWith vaultUpdate vault =
             case ( getRoomById input.roomId vault, nextBatch ) of
                 ( Just room, Just nb ) ->
                     room
-                        |> Snackbar.withoutCandy
-                        |> IRoom.insertEvents
-                            { events =
-                                output.chunk
-                                    |> List.map Event.initFromGetMessages
-                                    |> (\x ->
-                                            case input.direction of
-                                                Enums.Chronological ->
-                                                    x
-
-                                                Enums.ReverseChronological ->
-                                                    List.reverse x
-                                       )
-                            , prevBatch = prevBatch
-                            , nextBatch = nb
-                            , stateDelta = Just <| StateManager.fromEventList (List.map Event.initFromGetMessages output.state)
-                            }
-                        |> Internal.insertRoom
                         |> Snackbar.map
+                            (IRoom.insertEvents
+                                { events =
+                                    output.chunk
+                                        |> List.map Event.initFromGetMessages
+                                        |> (\x ->
+                                                case input.direction of
+                                                    Enums.Chronological ->
+                                                        x
+
+                                                    Enums.ReverseChronological ->
+                                                        List.reverse x
+                                           )
+                                , prevBatch = prevBatch
+                                , nextBatch = nb
+                                , stateDelta = Just <| StateManager.fromEventList (List.map Event.initFromGetMessages output.state)
+                                }
+                            )
+                        |> insertRoom
                         |> (|>) vault
 
                 _ ->
@@ -217,11 +216,10 @@ updateWith vaultUpdate vault =
         JoinedMembersToRoom _ _ ->
             vault
 
-        -- TODO
         JoinedRoom input _ ->
             Snackbar.map (Internal.removeInvite input.roomId) vault
 
-        -- TODO
+        -- TODO: Remove room from dict of joined rooms
         LeftRoom input () ->
             Snackbar.map (Internal.removeInvite input.roomId) vault
 
@@ -229,42 +227,49 @@ updateWith vaultUpdate vault =
             Maybe.map2
                 (\room sender ->
                     room
-                        |> Snackbar.withoutCandy
-                        |> IRoom.addTemporaryEvent
-                            { content = content
-                            , eventType = eventType
-                            , eventId = eventId
-                            , originServerTs = Internal.lastUpdate (Snackbar.withoutCandy vault)
-                            , sender = sender
-                            , stateKey = Nothing
-                            }
+                        |> Snackbar.map
+                            (IRoom.addTemporaryEvent
+                                { content = content
+                                , eventType = eventType
+                                , eventId = eventId
+                                , originServerTs = Internal.lastUpdate (Snackbar.withoutCandy vault)
+                                , sender = sender
+                                , stateKey = Nothing
+                                }
+                            )
+                        |> insertRoom
+                        |> (|>) vault
                 )
                 (getRoomById roomId vault)
                 (getUsername vault)
-                |> Maybe.map (Snackbar.withCandyFrom vault >> insertRoom >> (|>) vault)
                 |> Maybe.withDefault vault
 
         -- TODO
         RedactedEvent _ _ ->
             vault
 
+        RemoveFailedTask i ->
+            Snackbar.removeFailedTask i vault
+
         StateEventSent { content, eventType, roomId, stateKey } { eventId } ->
             Maybe.map2
                 (\room sender ->
                     room
-                        |> Snackbar.withoutCandy
-                        |> IRoom.addTemporaryEvent
-                            { content = content
-                            , eventType = eventType
-                            , eventId = eventId
-                            , originServerTs = Internal.lastUpdate (Snackbar.withoutCandy vault)
-                            , sender = sender
-                            , stateKey = Just stateKey
-                            }
+                        |> Snackbar.map
+                            (IRoom.addTemporaryEvent
+                                { content = content
+                                , eventType = eventType
+                                , eventId = eventId
+                                , originServerTs = Internal.lastUpdate (Snackbar.withoutCandy vault)
+                                , sender = sender
+                                , stateKey = Just stateKey
+                                }
+                            )
+                        |> insertRoom
+                        |> (|>) vault
                 )
                 (getRoomById roomId vault)
                 (getUsername vault)
-                |> Maybe.map (Snackbar.withCandyFrom vault >> insertRoom >> (|>) vault)
                 |> Maybe.withDefault vault
 
         SyncUpdate input output ->
@@ -357,6 +362,27 @@ updateWith vaultUpdate vault =
                 )
                 vault
 
+        TaskFailed s t ->
+            Snackbar.addFailedTask
+                (\taskId ->
+                    ( s
+                    , t
+                        >> Task.map
+                            (\u ->
+                                case u of
+                                    MultipleUpdates [] ->
+                                        RemoveFailedTask taskId
+
+                                    MultipleUpdates l ->
+                                        MultipleUpdates (RemoveFailedTask taskId :: l)
+
+                                    _ ->
+                                        MultipleUpdates [ RemoveFailedTask taskId, u ]
+                            )
+                    )
+                )
+                vault
+
         UpdateAccessToken token ->
             Snackbar.addToken token vault
 
@@ -377,15 +403,16 @@ getUsername =
 
 {-| Set personal account data
 -}
-setAccountData : String -> E.Value -> Vault -> Task X.Error VaultUpdate
-setAccountData key value vault =
+setAccountData : { key : String, value : E.Value, onResponse : VaultUpdate -> msg, vault : Vault } -> Cmd msg
+setAccountData { key, value, onResponse, vault } =
     Api.setAccountData { content = value, eventType = key, roomId = Nothing } vault
+        |> Task.perform onResponse
 
 
 {-| Synchronize vault
 -}
-sync : Vault -> Task X.Error VaultUpdate
-sync vault =
+sync : Vault -> (VaultUpdate -> msg) -> Cmd msg
+sync vault onResponse =
     let
         syncInput : SyncInput
         syncInput =
@@ -397,33 +424,7 @@ sync vault =
             }
     in
     Api.sync syncInput vault
-        -- TODO: The sync function is described as "updating all the tokens".
-        -- TODO: For this reason, (only) the sync function should handle errors
-        -- TODO: that indicate that the user's access tokens have expired.
-        -- TODO: This implementation needs to be tested.
-        |> Task.onError
-            (\err ->
-                case err of
-                    X.UnsupportedSpecVersion ->
-                        Task.fail err
-
-                    X.SDKException _ ->
-                        Task.fail err
-
-                    X.InternetException _ ->
-                        Task.fail err
-
-                    -- TODO: The login should be different when soft_logout.
-                    -- TODO: Add support for refresh token.
-                    X.ServerException (X.M_UNKNOWN_TOKEN _) ->
-                        Api.loginMaybeSync syncInput vault
-
-                    X.ServerException (X.M_MISSING_TOKEN _) ->
-                        Api.loginMaybeSync syncInput vault
-
-                    X.ServerException _ ->
-                        Task.fail err
-            )
+        |> Task.perform onResponse
 
 
 {-| Get a list of all synchronised rooms.

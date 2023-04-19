@@ -73,6 +73,9 @@ retryTask n task =
                     X.ServerException _ ->
                         Task.fail err
 
+                    X.ContextFailed _ ->
+                        Task.fail err
+
                     X.UnsupportedSpecVersion ->
                         Task.fail err
             )

@@ -12,99 +12,149 @@ without needing to update every data type whenever any of the tokens change.
 
 -}
 
+import Dict exposing (Dict)
 import Internal.Api.Versions.V1.Versions as V
 import Internal.Tools.LoginValues as Login exposing (AccessToken(..))
+import Task exposing (Task)
 
 
-type Snackbar a
+type Snackbar a vu
     = Snackbar
         { access : AccessToken
         , content : a
+        , failedTasks : Dict Int ( String, Snackbar () vu -> Task Never vu )
+        , failedTasksOffset : Int
         , homeserver : String
+        , transactionOffset : Int
         , vs : Maybe V.Versions
         }
 
 
-accessToken : Snackbar a -> AccessToken
+accessToken : Snackbar a vu -> AccessToken
 accessToken (Snackbar { access }) =
     access
 
 
-addToken : String -> Snackbar a -> Snackbar a
+addFailedTask : (Int -> ( String, Snackbar () vu -> Task Never vu )) -> Snackbar a vu -> Snackbar a vu
+addFailedTask taskWithId (Snackbar ({ failedTasks, failedTasksOffset } as data)) =
+    Snackbar
+        { data
+            | failedTasks = Dict.insert failedTasksOffset (taskWithId failedTasksOffset) failedTasks
+            , failedTasksOffset = failedTasksOffset + 1
+        }
+
+
+addToken : String -> Snackbar a vu -> Snackbar a vu
 addToken token (Snackbar ({ access } as data)) =
     Snackbar { data | access = Login.addToken token access }
 
 
-addUsernameAndPassword : { username : String, password : String } -> Snackbar a -> Snackbar a
+addUsernameAndPassword : { username : String, password : String } -> Snackbar a vu -> Snackbar a vu
 addUsernameAndPassword uap (Snackbar ({ access } as data)) =
     Snackbar { data | access = Login.addUsernameAndPassword uap access }
 
 
-addVersions : V.Versions -> Snackbar a -> Snackbar a
+addVersions : V.Versions -> Snackbar a vu -> Snackbar a vu
 addVersions vs (Snackbar data) =
     Snackbar { data | vs = Just vs }
 
 
-addWhoAmI : { w | userId : String, deviceId : Maybe String } -> Snackbar a -> Snackbar a
+addWhoAmI : { w | userId : String, deviceId : Maybe String } -> Snackbar a vu -> Snackbar a vu
 addWhoAmI whoami (Snackbar ({ access } as data)) =
     Snackbar { data | access = Login.addWhoAmI whoami access }
 
 
-baseUrl : Snackbar a -> String
+baseUrl : Snackbar a vu -> String
 baseUrl (Snackbar { homeserver }) =
     homeserver
 
 
-init : { baseUrl : String, content : a } -> Snackbar a
+errors : Snackbar a vu -> List String
+errors (Snackbar { failedTasks }) =
+    Dict.values failedTasks |> List.map Tuple.first
+
+
+getFailedTasks : Snackbar a vu -> List (Snackbar () vu -> Task Never vu)
+getFailedTasks (Snackbar { failedTasks }) =
+    Dict.values failedTasks |> List.map Tuple.second
+
+
+getTransactionOffset : Snackbar a vu -> Int
+getTransactionOffset (Snackbar { transactionOffset }) =
+    transactionOffset
+
+
+init : { baseUrl : String, content : a } -> Snackbar a vu
 init data =
     Snackbar
         { access = NoAccess
         , content = data.content
+        , failedTasks = Dict.empty
+        , failedTasksOffset = 0
         , homeserver = data.baseUrl
+        , transactionOffset = 0
         , vs = Nothing
         }
 
 
-map : (a -> b) -> Snackbar a -> Snackbar b
+map : (a -> b) -> Snackbar a vu -> Snackbar b vu
 map f (Snackbar data) =
     Snackbar
         { access = data.access
         , content = f data.content
+        , failedTasks = data.failedTasks
+        , failedTasksOffset = 0
         , homeserver = data.homeserver
+        , transactionOffset = data.transactionOffset
         , vs = data.vs
         }
 
 
-mapList : (a -> List b) -> Snackbar a -> List (Snackbar b)
+mapList : (a -> List b) -> Snackbar a vu -> List (Snackbar b vu)
 mapList f (Snackbar data) =
     List.map (withCandyFrom (Snackbar data)) (f data.content)
 
 
-mapMaybe : (a -> Maybe b) -> Snackbar a -> Maybe (Snackbar b)
+mapMaybe : (a -> Maybe b) -> Snackbar a vu -> Maybe (Snackbar b vu)
 mapMaybe f (Snackbar data) =
     Maybe.map (withCandyFrom (Snackbar data)) (f data.content)
 
 
-removedAccessToken : Snackbar a -> AccessToken
+removedAccessToken : Snackbar a vu -> AccessToken
 removedAccessToken (Snackbar { access }) =
     Login.removeToken access
 
 
-userId : Snackbar a -> Maybe String
+removeFailedTask : Int -> Snackbar a vu -> Snackbar a vu
+removeFailedTask i (Snackbar ({ failedTasks } as data)) =
+    Snackbar { data | failedTasks = Dict.remove i failedTasks }
+
+
+setTransactionOffset : Int -> Snackbar a vu -> Snackbar a vu
+setTransactionOffset i (Snackbar data) =
+    Snackbar { data | transactionOffset = max (data.transactionOffset + 1) (i + 1) }
+
+
+userId : Snackbar a vu -> Maybe String
 userId (Snackbar { access }) =
     Login.getUserId access
 
 
-versions : Snackbar a -> Maybe V.Versions
+versions : Snackbar a vu -> Maybe V.Versions
 versions (Snackbar { vs }) =
     vs
 
 
-withCandyFrom : Snackbar b -> a -> Snackbar a
+withCandyFrom : Snackbar b vu -> a -> Snackbar a vu
 withCandyFrom snackbar x =
     map (always x) snackbar
 
 
-withoutCandy : Snackbar a -> a
+withoutCandy : Snackbar a vu -> a
 withoutCandy (Snackbar { content }) =
     content
+
+
+withoutContent : Snackbar a vu -> Snackbar () vu
+withoutContent =
+    map (always ())

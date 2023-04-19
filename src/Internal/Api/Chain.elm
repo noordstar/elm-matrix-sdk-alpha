@@ -30,46 +30,95 @@ type as a message to the Credentials to update certain information.
 
 -}
 
+import Http
 import Internal.Api.Helpers as Helpers
 import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
 
 
-type alias TaskChain u a b =
-    Context a -> Task X.Error (TaskChainPiece u a b)
+type alias TaskChain err u a b =
+    Context a -> Task (FailedChainPiece err u) (TaskChainPiece u a b)
 
 
-type alias IdemChain u a =
-    TaskChain u a a
+type alias IdemChain err u a =
+    TaskChain err u a a
 
 
-type TaskChainPiece u a b
-    = TaskChainPiece
-        { contextChange : Context a -> Context b
-        , messages : List u
-        }
+type alias CompleteChain u =
+    TaskChain () u {} {}
+
+
+type alias TaskChainPiece u a b =
+    { contextChange : Context a -> Context b
+    , messages : List u
+    }
+
+
+type alias FailedChainPiece err u =
+    { error : err, messages : List u }
 
 
 {-| Chain two tasks together. The second task will only run if the first one succeeds.
 -}
-andThen : TaskChain u b c -> TaskChain u a b -> TaskChain u a c
+andThen : TaskChain err u b c -> TaskChain err u a b -> TaskChain err u a c
 andThen f2 f1 =
     \context ->
         f1 context
             |> Task.andThen
-                (\(TaskChainPiece old) ->
+                (\old ->
                     context
                         |> old.contextChange
                         |> f2
                         |> Task.map
-                            (\(TaskChainPiece new) ->
-                                TaskChainPiece
-                                    { contextChange = old.contextChange >> new.contextChange
-                                    , messages = List.append old.messages new.messages
-                                    }
+                            (\new ->
+                                { contextChange = old.contextChange >> new.contextChange
+                                , messages = List.append old.messages new.messages
+                                }
+                            )
+                        |> Task.mapError
+                            (\{ error, messages } ->
+                                { error = error, messages = List.append old.messages messages }
                             )
                 )
+
+
+{-| Same as `andThen`, but the results are placed at the front of the list, rather than at the end.
+-}
+andBeforeThat : TaskChain err u b c -> TaskChain err u a b -> TaskChain err u a c
+andBeforeThat f2 f1 =
+    \context ->
+        f1 context
+            |> Task.andThen
+                (\old ->
+                    context
+                        |> old.contextChange
+                        |> f2
+                        |> Task.map
+                            (\new ->
+                                { contextChange = old.contextChange >> new.contextChange
+                                , messages = List.append new.messages old.messages
+                                }
+                            )
+                        |> Task.mapError
+                            (\{ error, messages } ->
+                                { error = error, messages = List.append messages old.messages }
+                            )
+                )
+
+
+{-| When an error has occurred, "fix" it with the following function.
+-}
+catchWith : (err -> TaskChainPiece u a b) -> TaskChain err u a b -> TaskChain err u a b
+catchWith onErr f =
+    onError (\e -> succeed <| onErr e) f
+
+
+{-| Create a task chain that always fails.
+-}
+fail : err -> TaskChain err u a b
+fail e _ =
+    Task.fail { error = e, messages = [] }
 
 
 {-| Optionally run a task that may provide additional information.
@@ -80,23 +129,72 @@ without needlessly breaking the whole chain if anything breaks in here.
 You cannot use this function to execute a task chain that adds or removes context.
 
 -}
-maybe : IdemChain u a -> IdemChain u a
+maybe : IdemChain err u a -> IdemChain err u a
 maybe f =
     { contextChange = identity
     , messages = []
     }
-        |> TaskChainPiece
-        |> Task.succeed
+        |> succeed
         |> always
-        |> Task.onError
-        |> (>>) f
+        |> onError
+        |> (|>) f
 
 
-{-| If the TaskChain fails, run this task otherwise.
+{-| Map a value to a different one.
 -}
-otherwise : TaskChain u a b -> TaskChain u a b -> TaskChain u a b
+map : (u1 -> u2) -> TaskChain err u1 a b -> TaskChain err u2 a b
+map m f =
+    \context ->
+        f context
+            |> Task.map
+                (\{ contextChange, messages } ->
+                    { contextChange = contextChange, messages = List.map m messages }
+                )
+            |> Task.mapError
+                (\{ error, messages } ->
+                    { error = error, messages = List.map m messages }
+                )
+
+
+{-| If the TaskChain errfails, run this task otherwise.
+-}
+otherwise : TaskChain err u a b -> TaskChain e u a b -> TaskChain err u a b
 otherwise f2 f1 context =
     Task.onError (always <| f2 context) (f1 context)
+
+
+{-| If all else fails, you can also just add the failing part to the succeeding part.
+-}
+otherwiseFail : IdemChain err u a -> IdemChain err (Result err u) a
+otherwiseFail =
+    map Ok
+        >> catchWith
+            (\err ->
+                { contextChange = identity
+                , messages = [ Err err ]
+                }
+            )
+
+
+{-| If an error is raised, deal with it accordingly.
+-}
+onError : (err -> TaskChain err2 u a b) -> TaskChain err u a b -> TaskChain err2 u a b
+onError onErr f =
+    \context ->
+        f context
+            |> Task.onError
+                (\{ error, messages } ->
+                    succeed { contextChange = identity, messages = messages }
+                        |> andThen (onErr error)
+                        |> (|>) context
+                )
+
+
+{-| Create a task chain that always succeeds.
+-}
+succeed : { contextChange : Context a -> Context b, messages : List u } -> TaskChain err u a b
+succeed d _ =
+    Task.succeed d
 
 
 {-| Once all the pieces of the chain have been assembled, you can turn it into a task.
@@ -104,22 +202,46 @@ otherwise f2 f1 context =
 The compiler will fail if the chain is missing a vital piece of information.
 
 -}
-toTask : TaskChain u {} b -> Task X.Error (List u)
+toTask : TaskChain err u {} b -> Task (FailedChainPiece err u) (List u)
 toTask f1 =
     Context.init
         |> f1
-        |> Task.map
-            (\(TaskChainPiece data) ->
-                data.messages
-            )
+        |> Task.map .messages
 
 
-{-| If the TaskChain fails, this function will get it to retry.
+{-| If the TaskChain errfails, this function will get it to retry.
 
 When set to 1 or lower, the task will only try once.
 
 -}
-tryNTimes : Int -> TaskChain u a b -> TaskChain u a b
-tryNTimes n f context =
-    f context
-        |> Helpers.retryTask (n - 1)
+tryNTimes : Int -> TaskChain X.Error u a b -> TaskChain X.Error u a b
+tryNTimes n f =
+    if n <= 0 then
+        f
+
+    else
+        onError
+            (\e ->
+                case e of
+                    X.InternetException (Http.BadUrl _) ->
+                        fail e
+
+                    X.InternetException _ ->
+                        tryNTimes (n - 1) f
+
+                    X.SDKException (X.ServerReturnsBadJSON _) ->
+                        tryNTimes (n - 1) f
+
+                    X.SDKException _ ->
+                        fail e
+
+                    X.ServerException _ ->
+                        fail e
+
+                    X.ContextFailed _ ->
+                        fail e
+
+                    X.UnsupportedSpecVersion ->
+                        fail e
+            )
+            f

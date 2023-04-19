@@ -180,6 +180,13 @@ removeAccessToken (Context data) =
     Context data
 
 
+{-| Remove all context.
+-}
+removeAll : Context a -> Context {}
+removeAll (Context data) =
+    Context data
+
+
 {-| Remove the base url from the Context
 -}
 removeBaseUrl : Context { a | baseUrl : () } -> Context a
