@@ -168,10 +168,7 @@ roomId =
 
 {-| Send an unformatted text message to a room.
 
-    task =
-        room
-            |> sendMessage "Hello, world!"
-            |> Task.attempt onResponse
+    sendMessage { room = someRoom, onResponse = MessageSent, text = "Hello!" }
 
 **Hint:** are you trying to send multiple messages at the same time? You might want to use `sendMessages` instead.
 
@@ -188,17 +185,27 @@ This way, you will lose messages!
 
 If you're intending to send the same message multiple times, this function will emphasize that these messages are not the same.
 
+    data = { room = someRoom, onResponse = MessageSent, text = "Hello!" }
+
     -- SAFE
-    Task.sequence [ sendMessage "Hello, world!", sendMessage "hi mom!" ]
+    Cmd.batch [ sendMessage data, sendMessage { data | text = "hi mom!" } ]
 
     -- NOT SAFE
-    Task.sequence [ sendMessage "Hello, world!", sendMessage "Hello world!" ]
+    Cmd.batch [ sendMessage data, sendMessage data ]
 
     -- SAFE
-    Task.sequence <| sendMessages [ "Hello, world!", "hi mom!" ]
+    sendMessages
+        { room = someRoom
+        , textPieces = [ "Hello!", "hi mom!" ]
+        , onResponse = MessageSent
+        }
 
     -- SAFE
-    Task.sequence <| sendMessages [ "Hello, world!", "Hello, world!" ]
+    sendMessages
+        { room = someRoom
+        , textPieces = [ "Hello!", "Hello!" ]
+        , onResponse = MessageSent
+        }
 
 -}
 sendMessages : { room : Room, textPieces : List String, onResponse : VaultUpdate -> msg } -> Cmd msg
@@ -210,18 +217,19 @@ sendMessages { room, textPieces, onResponse } =
 
 Keep in mind that this function is not safe to use if you're sending exactly the same messages multiple times:
 
+    data =
+        { content = E.object []
+        , eventType = "com.example.foo"
+        , room = someRoom
+        , stateKey = Nothing
+        , onResponse = EventSent
+        }
+
     -- SAFE
-    Task.sequence
-        [ sendOneEvent { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-        , sendOneEvent { content = E.int 0, eventType = "com.example.foo", stateKey = Nothing } room
-        ]
+    Cmd.batch [ sendOneEvent data , sendOneEvent { data | content = E.int 0 } ]
 
     -- NOT SAFE
-    Task.sequence
-        [ sendOneEvent { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-        , sendOneEvent { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-        ]
-
+    Cmd.batch [ sendOneEvent data , sendOneEvent data ]
 -}
 sendOneEvent : { content : D.Value, eventType : String, room : Room, stateKey : Maybe String, onResponse : VaultUpdate -> msg } -> Cmd msg
 sendOneEvent =
@@ -236,17 +244,25 @@ This function ensures that every messages is treated separately.
 Keep in mind that this function doesn't send the events in order, it just makes them safe to send at the same time.
 
     -- NOT SAFE
-    [ sendOneEvent { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-    , sendOneEvent { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-    ]
-        |> Task.sequence
+    data =
+        { content = E.object []
+        , eventType = "com.example.foo"
+        , room = someRoom
+        , stateKey = Nothing
+        , onResponse = EventSent
+        }
+
+    Cmd.batch [ sendOneEvent data , sendOneEvent data ]
 
     -- SAFE
-    [ { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-    , { content = E.object [], eventType = "com.example.foo", stateKey = Nothing } room
-    ]
-        |> sendMultipleEvents
-        |> Task.sequence
+    data =
+        { content = E.object []
+        , eventType = "com.example.foo"
+        , stateKey = Nothing
+        , onResponse = EventSent
+        }
+
+    sendMultipleEvents [ data, data ] someRoom
 
 -}
 sendMultipleEvents : List { content : D.Value, eventType : String, stateKey : Maybe String, onResponse : VaultUpdate -> msg } -> Room -> Cmd msg
