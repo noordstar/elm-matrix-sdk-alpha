@@ -26,7 +26,7 @@ superior ASCII snake model.)
 
 Every task will add another value to an extensible record, which can be used
 by later tasks in the chain. Additionally, every subtask can leave a `VaultUpdate`
-type as a message to the Credentials to update certain information.
+type as a message to the Vault to update certain information.
 
 -}
 
