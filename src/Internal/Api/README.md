@@ -20,6 +20,8 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 
 | **Spec version** |   | Syncing | Redaction |
 | ---------------- | - | ------- | --------- |
+| v1.8   || ⚡ | ⚡ |
+| v1.7   || ⚡ | ⚡ |
 | v1.6   || ⚠️ | ⚠️ |
 | v1.5   || ✔️ | ✔️ |
 | v1.4   || ✔️ | ✔️ |
@@ -40,6 +42,8 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 
 | **Spec version** |   | Inviting | Joining room id | Leaving room | Kick user | Ban user |
 | ---------------- | - | -------- | --------------- | ------------ | --------- | -------- |
+| v1.8   || ⚡ | ⚡ | ⚡ | ⚡ | ⚡ |
+| v1.7   || ⚡ | ⚡ | ⚡ | ⚡ | ⚡ |
 | v1.6   || ✔️ | ✔️ | ✔️ | ⚡ | ✔️ |
 | v1.5   || ✔️ | ✔️ | ✔️ | ⚡ | ✔️ |
 | v1.4   || ✔️ | ✔️ | ✔️ | ⚡ | ✔️ |
@@ -60,6 +64,8 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 
 | **Spec version** |   | Event | Joined members | Event at timestamp |
 | ---------------- | - | ----- | -------------- | ------------------ |
+| v1.8   || ⚡ | ⚡ | ⚡ |
+| v1.7   || ⚡ | ⚡ | ⚡ |
 | v1.6   || ✔️ | ✔️ | ⚠️ |
 | v1.5   || ✔️ | ✔️ | ⛔ |
 | v1.4   || ✔️ | ✔️ | ⛔ |
@@ -80,6 +86,8 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 
 | **Spec version** |   | Message event | State event |
 | ---------------- | - | ------------- | ----------- |
+| v1.8   || ⚡ | ⚡ |
+| v1.7   || ⚡ | ⚡ |
 | v1.6   || ✔️ | ✔️ |
 | v1.5   || ✔️ | ✔️ |
 | v1.4   || ✔️ | ✔️ |
