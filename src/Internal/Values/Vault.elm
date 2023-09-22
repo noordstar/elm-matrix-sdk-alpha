@@ -1,6 +1,6 @@
 module Internal.Values.Vault exposing (..)
 
-{-| The Credentials type is the keychain of the Matrix SDK.
+{-| The IVault (Internal Vault) type is the keychain of the Matrix SDK.
 It handles all communication with the homeserver.
 -}
 
@@ -51,7 +51,7 @@ getInvites (IVault data) =
     data.invites
 
 
-{-| Get a room from the Credentials type by the room's id.
+{-| Get a room from the IVault type by the room's id.
 -}
 getRoomById : String -> IVault -> Maybe IRoom
 getRoomById roomId (IVault cred) =
@@ -72,7 +72,7 @@ getSince (IVault { since }) =
     since
 
 
-{-| Create new empty Credentials.
+{-| Create new empty IVault.
 -}
 init : IVault
 init =
@@ -102,7 +102,7 @@ insertAccountData { content, eventType, roomId } (IVault data) =
             IVault { data | accountData = Dict.insert eventType content data.accountData }
 
 
-{-| Add a new room to the Credentials type. If a room with this id already exists, it is overwritten.
+{-| Add a new room to the IVault type. If a room with this id already exists, it is overwritten.
 
 This function can hence also be used as an update function for rooms.
 
