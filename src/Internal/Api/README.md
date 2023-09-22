@@ -42,8 +42,8 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 
 | **Spec version** |   | Inviting | Joining room id | Leaving room | Kick user | Ban user |
 | ---------------- | - | -------- | --------------- | ------------ | --------- | -------- |
-| v1.8   || ✔️ | ⚡ | ⚡ | ⚡ | ✔️ |
-| v1.7   || ✔️ | ⚡ | ⚡ | ⚡ | ✔️ |
+| v1.8   || ✔️ | ✔️ | ⚡ | ⚡ | ✔️ |
+| v1.7   || ✔️ | ✔️ | ⚡ | ⚡ | ✔️ |
 | v1.6   || ✔️ | ✔️ | ✔️ | ⚡ | ✔️ |
 | v1.5   || ✔️ | ✔️ | ✔️ | ⚡ | ✔️ |
 | v1.4   || ✔️ | ✔️ | ✔️ | ⚡ | ✔️ |
