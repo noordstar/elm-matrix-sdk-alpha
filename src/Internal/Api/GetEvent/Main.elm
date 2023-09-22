@@ -15,12 +15,19 @@ getEvent context input =
         }
         |> VC.sameForVersion "r0.6.0"
         |> VC.sameForVersion "r0.6.1"
-        |> VC.sameForVersion "v1.1"
+        |> VC.addMiddleLayer
+            { downcast = identity
+            , current = Api.getEventInputV2
+            , upcast = identity
+            , version = "v1.1"
+            }
         |> VC.sameForVersion "v1.2"
         |> VC.sameForVersion "v1.3"
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
         |> VC.sameForVersion "v1.6"
+        |> VC.sameForVersion "v1.7"
+        |> VC.sameForVersion "v1.8"
         |> VC.mostRecentFromVersionList (Context.getVersions context)
         |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
         |> (|>) input
