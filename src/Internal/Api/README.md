@@ -86,8 +86,8 @@ Note that **under development** doesn't always mean that it _will be_ supported.
 
 | **Spec version** |   | Message event | State event |
 | ---------------- | - | ------------- | ----------- |
-| v1.8   || ⚡ | ⚡ |
-| v1.7   || ⚡ | ⚡ |
+| v1.8   || ✔️ | ✔️ |
+| v1.7   || ✔️ | ✔️ |
 | v1.6   || ✔️ | ✔️ |
 | v1.5   || ✔️ | ✔️ |
 | v1.4   || ✔️ | ✔️ |
