@@ -32,6 +32,8 @@ sendMessageEvent context input =
         |> VC.sameForVersion "v1.4"
         |> VC.sameForVersion "v1.5"
         |> VC.sameForVersion "v1.6"
+        |> VC.sameForVersion "v1.7"
+        |> VC.sameForVersion "v1.8"
         |> VC.mostRecentFromVersionList (Context.getVersions context)
         |> Maybe.withDefault (always <| always <| Task.fail X.UnsupportedSpecVersion)
         |> (|>) input
