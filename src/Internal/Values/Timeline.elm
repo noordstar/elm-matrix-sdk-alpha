@@ -1,22 +1,112 @@
 module Internal.Values.Timeline exposing (..)
-
-{-| This module shapes the Timeline type used to keep track of timelines in Matrix rooms.
+{-| The Timeline can be very complex, and it can be represented in surprisingly
+complex manners. This module aims to provide one single Timeline type that
+accepts the complex pieces of information from the API and contain it all in
+a simple way to view events.
 -}
 
+import FastDict as Dict exposing (Dict)
 import Internal.Config.Leaking as Leaking
 import Internal.Tools.Fold as Fold
 import Internal.Values.Event as Event exposing (IEvent)
 import Internal.Values.StateManager as StateManager exposing (StateManager)
+import Internal.Tools.DefaultDict as DefaultDict exposing (DefaultDict)
+import Internal.Tools.Hashdict as Hashdict exposing (Hashdict)
+import Internal.Tools.Iddict as Iddict exposing (Iddict)
+import Internal.Tools.Filters.Main as Filter exposing (Filter)
+import Internal.Config.Leaking exposing (nextBatch)
 
+{-| The Timeline is a comprehensive object describing a timeline in a room.
 
+Any Timeline type contains the following pieces of information:
+
+- `events` Comprehensive dictionary containing all locally stored timeline events
+- `batches` Comprehensive dictionary containing all batches. Batches are pieces 
+    of the timeline that have been sent by the homeserver.
+- `token` Dictionary that maps for each batch token which batches it borders
+- `mostRecentSync` Id of the most "recent" batch in the timeline
+-}
 type Timeline
     = Timeline
-        { prevBatch : String
-        , nextBatch : String
-        , events : List IEvent
-        , stateAtStart : StateManager
-        , previous : BeforeTimeline
+        { events : Hashdict IEvent
+        , batches : Iddict TimelineBatch
+        , token : DefaultDict String (List Int)
+        , mostRecentSync : Maybe Int
         }
+
+{-| A BatchToken is a token that has been handed out by the server to mark the end of a  -}
+type alias BatchToken = String
+
+type alias TimelineBatch =
+    { prevBatch : List Batch
+    , nextBatch : List Batch
+    , filter : Filter
+    , events : List String
+    , stateDelta : StateManager
+    }
+
+type Batch
+    = Token BatchToken
+    | Batch Int
+
+addNewSync :
+    { events : List IEvent
+    , filter : Filter
+    , limited : Bool
+    , nextBatch : String
+    , prevBatch : String
+    , stateDelta : Maybe StateManager
+    } -> Timeline -> Timeline
+addNewSync data (Timeline timeline) =
+    let
+        batchToInsert : TimelineBatch
+        batchToInsert =
+            { prevBatch = 
+                [ Just <| Token data.prevBatch
+                , Maybe.map Batch timeline.mostRecentSync
+                ]
+                    |> List.filterMap identity
+            , nextBatch =
+                [ Token data.nextBatch ]
+            , filter = data.filter
+            , events = List.map Event.eventId data.events
+            , stateDelta = Maybe.withDefault StateManager.empty data.stateDelta
+            }
+    in
+        case Iddict.insert batchToInsert timeline.batches of
+            ( batchId, batches ) ->
+                Timeline
+                    { events = List.foldl Hashdict.insert timeline.events data.events
+                    , batches = batches
+                    , mostRecentSync = Just batchId
+                    , token =
+                        timeline.token
+                            |> DefaultDict.update data.prevBatch
+                                (\value ->
+                                    case value of
+                                        Just v ->
+                                            Just (batchId :: v)
+                                        Nothing ->
+                                            Just [ batchId ]
+                                )
+                            |> DefaultDict.update data.nextBatch
+                                (\value ->
+                                    case value of
+                                        Just v ->
+                                            Just (batchId :: v)
+                                        Nothing ->
+                                            Just [ batchId ]
+                                )
+                    }
+
+-- type Timeline
+--     = Timeline
+--         { prevBatch : String
+--         , nextBatch : String
+--         , events : List IEvent
+--         , stateAtStart : StateManager
+--         , previous : BeforeTimeline
+--         }
 
 
 type BeforeTimeline

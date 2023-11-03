@@ -6,8 +6,10 @@ For example, this is used to store events by their event id, or store rooms by t
 
 -}
 
-import Dict exposing (Dict)
-
+import FastDict as Dict exposing (Dict)
+import Json.Decode as D
+import Json.Encode as E
+import Hash exposing (Hash)
 
 type Hashdict a
     = Hashdict
@@ -19,6 +21,12 @@ type Hashdict a
 empty : (a -> String) -> Hashdict a
 empty hash =
     Hashdict { hash = hash, values = Dict.empty }
+
+encode : Hashdict E.Value -> E.Value
+encode (Hashdict h) =
+    h.values
+        |> Dict.toList
+        |> E.object
 
 
 fromList : (a -> String) -> List a -> Hashdict a
@@ -46,6 +54,9 @@ keys : Hashdict a -> List String
 keys (Hashdict h) =
     Dict.keys h.values
 
+toList : Hashdict a -> List (String, a)
+toList (Hashdict h) =
+    Dict.toList h.values
 
 union : Hashdict a -> Hashdict a -> Hashdict a
 union (Hashdict h1) (Hashdict h2) =

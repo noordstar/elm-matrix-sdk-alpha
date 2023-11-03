@@ -32,10 +32,8 @@ Once you have the event you want, you can explore it with the following function
 
 import Internal.Api.VaultUpdate exposing (VaultUpdate)
 import Internal.Invite as Internal
-import Internal.Tools.Exceptions as X
 import Internal.Values.RoomInvite as IR
 import Json.Encode as E
-import Task exposing (Task)
 
 
 {-| The `RoomInvite` type serves as an invite to a given room.
