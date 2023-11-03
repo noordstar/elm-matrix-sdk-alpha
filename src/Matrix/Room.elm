@@ -228,6 +228,7 @@ Keep in mind that this function is not safe to use if you're sending exactly the
 
     -- NOT SAFE
     Cmd.batch [ sendOneEvent data , sendOneEvent data ]
+
 -}
 sendOneEvent : { content : D.Value, eventType : String, room : Room, stateKey : Maybe String, onResponse : VaultUpdate -> msg } -> Cmd msg
 sendOneEvent =
