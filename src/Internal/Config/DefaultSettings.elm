@@ -33,3 +33,10 @@ supportedVersions =
 defaultDeviceName : String
 defaultDeviceName =
     "Elm Matrix SDK (v" ++ currentVersion ++ ")"
+
+
+{-| The amount of seconds that the Matrix Vault should wait for a response from the Matrix homeserver.
+-}
+syncTimeout : Int
+syncTimeout =
+    10

@@ -1,6 +1,7 @@
 module Internal.Api.Snackbar exposing (..)
 
-{-| The snackbar module helps wraps relevant credentials, access tokens, refresh tokens and more around internal types.
+{-| The snackbar module helps wraps relevant credentials, access tokens, 
+refresh tokens and more around internal types.
 
 Vault, Room and Event types don't need access to API tokens,
 but a user may way to redact an event, leave a room or reject an invite.
@@ -14,6 +15,7 @@ without needing to update every data type whenever any of the tokens change.
 
 import Dict exposing (Dict)
 import Internal.Api.Versions.V1.Versions as V
+import Internal.Config.DefaultSettings as DS
 import Internal.Tools.LoginValues as Login exposing (AccessToken(..))
 import Task exposing (Task)
 
@@ -27,7 +29,12 @@ type Snackbar a vu
         , homeserver : String
         , transactionOffset : Int
         , vs : Maybe V.Versions
+        , settings : Settings
         }
+
+
+type alias Settings =
+    { syncTimeout : Int }
 
 
 accessToken : Snackbar a vu -> AccessToken
@@ -92,6 +99,9 @@ init data =
         , failedTasks = Dict.empty
         , failedTasksOffset = 0
         , homeserver = data.baseUrl
+        , settings =
+            { syncTimeout = DS.syncTimeout
+            }
         , transactionOffset = 0
         , vs = Nothing
         }
@@ -105,6 +115,7 @@ map f (Snackbar data) =
         , failedTasks = data.failedTasks
         , failedTasksOffset = 0
         , homeserver = data.homeserver
+        , settings = data.settings
         , transactionOffset = data.transactionOffset
         , vs = data.vs
         }
@@ -133,6 +144,11 @@ removeFailedTask i (Snackbar ({ failedTasks } as data)) =
 setTransactionOffset : Int -> Snackbar a vu -> Snackbar a vu
 setTransactionOffset i (Snackbar data) =
     Snackbar { data | transactionOffset = max (data.transactionOffset + 1) (i + 1) }
+
+
+updateSettings : (Settings -> Settings) -> Snackbar a vu -> Snackbar a vu
+updateSettings f (Snackbar ({ settings } as data)) =
+    Snackbar { data | settings = f settings }
 
 
 userId : Snackbar a vu -> Maybe String

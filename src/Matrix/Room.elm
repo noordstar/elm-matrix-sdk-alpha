@@ -68,9 +68,7 @@ allowed for every room admin.
 import Internal.Api.VaultUpdate exposing (VaultUpdate)
 import Internal.Event as Event
 import Internal.Room as Internal
-import Internal.Tools.Exceptions as X
 import Json.Decode as D
-import Task exposing (Task)
 
 
 {-| A room represents a channel of communication within a Matrix home server.
