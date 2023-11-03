@@ -29,6 +29,7 @@ getEventInputV1 data context =
             ]
         |> R.toTask SO1.clientEventDecoder
 
+
 getEventInputV2 : GetEventInputV1 -> Context { a | accessToken : (), baseUrl : (), sentEvent : () } -> Task X.Error GetEventOutputV1
 getEventInputV2 data context =
     context
