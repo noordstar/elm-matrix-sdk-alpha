@@ -432,3 +432,8 @@ sync vault onResponse =
 rooms : Vault -> List Room.Room
 rooms =
     Snackbar.mapList Internal.getRooms
+
+
+settings : (Snackbar.Settings -> Snackbar.Settings) -> Vault -> Vault
+settings =
+    Snackbar.updateSettings

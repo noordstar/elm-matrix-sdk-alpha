@@ -16,7 +16,7 @@ import Internal.Values.Room as Internal
 import Internal.Values.StateManager as StateManager
 import Internal.Values.Timeline as Timeline
 import Json.Encode as E
-import Task exposing (Task)
+import Task
 
 
 {-| The `Room` type represents a Matrix Room. It contains context information

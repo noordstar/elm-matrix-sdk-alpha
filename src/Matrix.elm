@@ -33,10 +33,8 @@ interact with the API.
 import Internal.Api.VaultUpdate as Api
 import Internal.Invite exposing (RoomInvite)
 import Internal.Room exposing (Room)
-import Internal.Tools.Exceptions as X
 import Internal.Vault
 import Json.Encode as E
-import Task exposing (Task)
 
 
 {-| The Matrix API requires you to keep track of a lot of tokens, keys, values and more.
@@ -57,6 +55,13 @@ translate those instructions to a `VaultUpdate` that you can feed to your `Vault
 -}
 type alias VaultUpdate =
     Api.VaultUpdate
+
+{-| After evaluating an update, the `Status` type tells you how the Vault.
+-}
+type Status
+    = Good
+    | Warning String ((VaultUpdate -> msg) -> Cmd msg)
+    | Break String ((VaultUpdate -> msg) -> Cmd msg)
 
 
 {-| Create a new vault based on an access token.

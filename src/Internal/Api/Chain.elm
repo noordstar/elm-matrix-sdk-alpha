@@ -31,30 +31,52 @@ type as a message to the Vault to update certain information.
 -}
 
 import Http
-import Internal.Api.Helpers as Helpers
 import Internal.Tools.Context as Context exposing (Context)
 import Internal.Tools.Exceptions as X
 import Task exposing (Task)
 
+{-| The TaskChain is a piece in the long chain of tasks that need to be completed.
+The type defines four variables:
 
+- `err` value that may arise on an error
+- `u`   the update msg that should be returned
+- `a`   phantom type before executing the chain's context
+- `b`   phantom type after  executing the chain's context
+-}
 type alias TaskChain err u a b =
     Context a -> Task (FailedChainPiece err u) (TaskChainPiece u a b)
 
+{-| An IdemChain is a TaskChain that does not influence the chain's context
 
+- `err` value that may arise on an error
+- `u`   the update msg that should be executed
+- `a`   phantom type before, during and after the chain's context
+-}
 type alias IdemChain err u a =
     TaskChain err u a a
 
-
+{-| A CompleteChain is a complete snake that can be safely run and executed by
+the Elm core.
+-}
 type alias CompleteChain u =
     TaskChain () u {} {}
 
+{-| A TaskChainPiece is a piece that updates the chain's context.
 
+Once a chain is executed, the process will add the `messages` value to its list
+of updates, and it will update its context according to the `contextChange`
+function.
+-}
 type alias TaskChainPiece u a b =
     { contextChange : Context a -> Context b
     , messages : List u
     }
 
-
+{-| A FailedChainPiece initiates an early breakdown of a chain. Unless caught,
+this halts execution of the chain. The process will add the `messages` value to
+its list of updates, and it will return the given `err` value for a direct
+explanation of what went wrong.
+-}
 type alias FailedChainPiece err u =
     { error : err, messages : List u }
 
