@@ -103,3 +103,41 @@ When building a task chain, we start with an empty context of type `Context {}` 
 Effectively, this means we no longer need to specify a separate data type that stores any relevant information that is already available in the `Vault`. Instead, the `Vault`'s phantom type specifies that functions can be used if and only if certain values are available.
 
 The phantom type is exclusively an internal type and will therefore never be communicated to the end user of the library.
+
+### The Cmd type needs improved transparency
+
+It is difficult to build a complex Vault type without giving up on transparency.
+One of Elm's strengths is its power to be completely pure, guaranteeing the
+user that a library doesn't dump all of their passwords onto the world wide web.
+By expecting the user to constantly accept anything that passes between the
+Vault and the Elm runtime, this takes that core value away.
+
+I have spent months trying to talk to different people on how to tackle this,
+and my conclusion is as follows: it is simply easier to trust the Vault's
+integrity, especially given that the library is open source. However, to give
+more insight into what happened, every result comes back with effective ways to
+debug the connection.
+
+Instead of using the core's tasks, we introduce a more complex `Task` type:
+
+```elm
+type MatrixTask = MatrixTask -- ...
+```
+
+This task supports the same operations, however it is a bit more intelligent
+after its execution:
+
+1. The `MatrixTask` remembers what HTTP request(s) it has executed. Each HTTP
+request can be exported in different formats:
+
+    - A string format `curl` command
+    - A `Task` type so it can be run again
+    - A `MatrixTask` type to recreate the same command
+
+2. The `MatrixTask` collects a human readable log, catching both acceptable logs
+and error logs using a `List (Result String String)` type.
+
+Hopefully, these functions should make the `MatrixTask` type sufficiently
+transparent to support trust, security and the ability to debug network traffic
+as an end user.
+
