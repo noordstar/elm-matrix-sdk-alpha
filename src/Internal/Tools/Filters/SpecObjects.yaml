@@ -1,0 +1,135 @@
+version: v1
+name: SpecObjects
+objects:
+  Filter:
+    description: Main filter for filtering results
+    fields:
+      account_data:
+        type: EventFilter
+        required: false
+      event_fields:
+        type: '[string]'
+        required: false
+      event_format:
+        type: Enums.EventFormat
+        default: Enums.Client
+      presence:
+        type: EventFilter
+        required: false
+      room:
+        type: RoomFilter
+        required: false
+  EventFilter:
+    description: Filter that describes which events to include/exclude.
+    fields:
+      limit:
+        type: int
+        required: false
+      not_senders:
+        type: '[string]'
+        required: false
+      not_types:
+        type: '[string]'
+        required: false
+      senders:
+        type: '[string]'
+        required: false
+      types:
+        type: '[string]'
+        required: false
+  RoomFilter:
+    description: Filter that describes what should and shouldn't be included for rooms.
+    fields:
+      account_data:
+        type: RoomEventFilter
+        required: false
+      ephemeral:
+        type: RoomEventFilter
+        required: false
+      include_leave:
+        type: bool
+        default: 'False'
+      not_rooms:
+        type: '[string]'
+        required: false
+      rooms:
+        type: '[string]'
+        required: false
+      state:
+        type: StateFilter
+        required: false
+      timeline:
+        type: RoomEventFilter
+        required: false
+  RoomEventFilter:
+    description: Filter that describes which events to include/exclude in a Matrix room.
+    fields:
+      contains_url:
+        type: bool
+        required: false
+      include_redundant_members:
+        type: bool
+        default: 'False'
+      lazy_load_members:
+        type: bool
+        default: 'False'
+      limit:
+        type: int
+        required: false
+      not_rooms:
+        type: '[string]'
+        required: false
+      not_senders:
+        type: '[string]'
+        required: false
+      not_types:
+        type: '[string]'
+        required: false
+      rooms:
+        type: '[string]'
+        required: false
+      senders:
+        type: '[string]'
+        required: false
+      types:
+        type: '[string]'
+        required: false
+      unread_thread_notifications:
+        type: bool
+        default: 'False'
+  StateFilter:
+    description: Filter that describes which events to include/exclude in a Matrix room.
+    fields:
+      contains_url:
+        type: bool
+        required: false
+      include_redundant_members:
+        type: bool
+        default: 'False'
+      lazy_load_members:
+        type: bool
+        default: 'False'
+      limit:
+        type: int
+        required: false
+      not_rooms:
+        type: '[string]'
+        required: false
+      not_senders:
+        type: '[string]'
+        required: false
+      not_types:
+        type: '[string]'
+        required: false
+      rooms:
+        type: '[string]'
+        required: false
+      senders:
+        type: '[string]'
+        required: false
+      types:
+        type: '[string]'
+        required: false
+      unread_thread_notifications:
+        type: bool
+        default: 'False'
