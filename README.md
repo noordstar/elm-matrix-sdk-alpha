@@ -1,6 +1,10 @@
-# Matrix SDK for Elm
+> ⚠️⚠️⚠️ **This project has migrated to a beta version on [noordstar/elm-matrix-sdk-beta](https://github.com/noordstar/elm-matrix-sdk-beta)!**
 
-This repository is a [Matrix](https://matrix.org/) SDK for [Elm](https://elm-lang.org/) compatible with [these spec versions](src/Internal/Api/README.md).
+# Matrix SDK for Elm (alpha)
+
+This repository is an alpha version of the [Matrix](https://matrix.org/) SDK for [Elm](https://elm-lang.org/) compatible with [these spec versions](src/Internal/Api/README.md).
+
+This alpha version is highly experimental. It has been replaced by a [beta version repository](https://github.com/noordstar/elm-matrix-sdk-beta).
 
 ## How to install
 
